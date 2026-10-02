@@ -1,0 +1,27 @@
+{
+  "name": "lead-radar-spike",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Phase 0 throwaway spike. Not the product. See ../docs/phase-0-spike.md",
+  "scripts": {
+    "apify": "tsx src/apify-run.ts",
+    "analyze": "tsx src/analyze.ts",
+    "classify": "tsx src/classify.ts",
+    "labels": "tsx src/label-report.ts",
+    "labelpage": "tsx src/label-page.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "0.129.0",
+    "@google/genai": "2.24.0",
+    "apify-client": "2.25.0",
+    "dotenv": "18.0.4",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.4",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  }
+}

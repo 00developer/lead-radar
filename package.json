@@ -1,0 +1,52 @@
+{
+  "name": "lead-radar",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Finds public Threads posts from people who want to hire developers, classifies them, and turns buyers into leads. See docs/.",
+  "scripts": {
+    "dev": "next dev --webpack",
+    "build": "next build --webpack",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "migrate": "tsx src/scripts/migrate.ts",
+    "seed": "tsx src/scripts/seed.ts",
+    "create-user": "tsx src/scripts/create-user.ts",
+    "alerts": "tsx src/scripts/alerts.ts",
+    "verify:rls": "tsx src/scripts/verify-rls.ts",
+    "smoke:ui": "tsx src/scripts/smoke-ui.ts",
+    "threads:check": "tsx src/scripts/threads-check.ts",
+    "golden:update": "tsx src/scripts/golden-update.ts",
+    "collect": "tsx src/scripts/collect.ts",
+    "classify": "tsx src/scripts/classify.ts",
+    "export:leads": "tsx src/scripts/export-leads.ts",
+    "eval": "tsx src/scripts/eval.ts",
+    "pipeline:dry": "tsx src/scripts/pipeline-dry.ts"
+  },
+  "dependencies": {
+    "@google/genai": "2.24.0",
+    "@supabase/ssr": "0.12.7",
+    "@supabase/supabase-js": "2.117.2",
+    "@tailwindcss/postcss": "4.3.3",
+    "apify-client": "2.25.0",
+    "dotenv": "18.0.4",
+    "next": "16.3.7",
+    "pg": "8.23.0",
+    "postcss": "8.5.28",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "server-only": "0.0.1",
+    "tailwindcss": "4.3.3",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "@types/node": "22.20.4",
+    "@types/pg": "8.23.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "vitest": "5.0.2"
+  }
+}

@@ -1,0 +1,95 @@
+// Smoke test of the running app (npm run start, or npm run dev) against the real database.
+// It creates a TEMPORARY user in the owner's workspace, signs in the way a browser would, loads every page and checks that
+// each one renders, then deletes the user again. It changes no lead data.
+// Usage: start the app first, then: npm run smoke:ui [-- --base http://localhost:3000]
+
+import crypto from 'node:crypto';
+import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
+import { requireValue } from '../lib/env';
+import { loadEnv, parseArgs, run, strArg } from './common';
+
+run(async () => {
+  const args = parseArgs(process.argv.slice(2));
+  const base = strArg(args, 'base') ?? 'http://localhost:3000';
+  const env = loadEnv();
+  const url = requireValue(env.NEXT_PUBLIC_SUPABASE_URL, 'NEXT_PUBLIC_SUPABASE_URL');
+  const anon = requireValue(env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY');
+  const admin = createClient(url, requireValue(env.SUPABASE_SERVICE_ROLE_KEY, 'SUPABASE_SERVICE_ROLE_KEY'), { auth: { autoRefreshToken: false, persistSession: false } });
+
+  const email = `smoke-${crypto.randomBytes(4).toString('hex')}@example.com`;
+  const password = crypto.randomBytes(18).toString('base64url');
+  let userId: string | undefined;
+  const results: { name: string; ok: boolean; detail: string }[] = [];
+  const check = (name: string, ok: boolean, detail = '') => results.push({ name, ok, detail });
+
+  try {
+    const ws = await admin.from('workspaces').select('id').order('created_at').limit(1).maybeSingle();
+    if (ws.error || !ws.data) throw new Error(`Could not find the workspace: ${ws.error?.message ?? 'none exists'}`);
+    const workspaceId = ws.data.id as string;
+    const created = await admin.auth.admin.createUser({ email, password, email_confirm: true });
+    if (created.error || !created.data.user) throw new Error(`Could not create the temporary user: ${created.error?.message}`);
+    userId = created.data.user.id;
+    const mem = await admin.from('workspace_members').insert({ workspace_id: workspaceId, user_id: userId, role: 'member' });
+    if (mem.error) throw new Error(`Could not add the temporary member: ${mem.error.message}`);
+
+    // Sign in exactly like the browser client would, and keep the cookies it wants to set.
+    const jar = new Map<string, string>();
+    const supabase = createServerClient(url, anon, {
+      cookies: { getAll: () => [...jar].map(([name, value]) => ({ name, value })), setAll: (list) => list.forEach((c) => jar.set(c.name, c.value)) },
+    });
+    const signIn = await supabase.auth.signInWithPassword({ email, password });
+    if (signIn.error) throw new Error(`Temporary user could not sign in: ${signIn.error.message}`);
+    const cookie = [...jar].map(([k, v]) => `${k}=${v}`).join('; ');
+
+    const get = async (path: string, withCookie: boolean) => {
+      const res = await fetch(`${base}${path}`, { redirect: 'manual', headers: withCookie ? { cookie } : {} });
+      return { status: res.status, location: res.headers.get('location') ?? '', text: await res.text() };
+    };
+
+    // Not logged in: everything private redirects to the login page.
+    for (const p of ['/', '/leads', '/keywords', '/sources', '/settings', '/profile']) {
+      const r = await get(p, false);
+      check(`visitor is sent to /login from ${p}`, r.status >= 300 && r.status < 400 && r.location.includes('/login'), `${r.status} ${r.location}`);
+    }
+    const login = await get('/login', false);
+    check('login page renders', login.status === 200 && login.text.includes('Sign in'));
+    const cron = await get('/api/cron/run', false);
+    check('cron route refuses a request without the secret', cron.status === 401, String(cron.status));
+    const connect = await get('/api/threads/connect', false);
+    check('Threads connect needs a login', connect.status >= 300 && connect.status < 400 && connect.location.includes('/login'), `${connect.status}`);
+
+    // Logged in: every page renders with real content.
+    const pages: [string, string | RegExp][] = [['/', /waiting for you|all caught up|No leads yet/], ['/leads', /Filter leads|No leads yet/], ['/leads?view=hidden', /Posts the AI read|Nothing hidden/], ['/keywords', /Add a keyword/], ['/sources', /Threads account/], ['/settings', /Thresholds, filters and alerts/], ['/profile', /Scan your website|Products and services/], ['/insights', /What to do next|No leads yet/], ['/leads?label=none', /Not labeled yet/]];
+    for (const [p, needle] of pages) {
+      const r = await get(p, true);
+      check(`logged in: ${p} renders`, r.status === 200 && (typeof needle === 'string' ? r.text.includes(needle) : needle.test(r.text)) && !r.text.includes('Something went wrong'), `${r.status}`);
+    }
+    const leads = await get('/leads', true);
+    const firstLead = /href="\/leads\/([0-9a-f-]{36})"/.exec(leads.text)?.[1];
+    check('the lead list shows leads', !!firstLead, firstLead ? '' : 'no lead link found');
+    if (firstLead) {
+      const d = await get(`/leads/${firstLead}`, true);
+      check('a lead page renders with the post, AI analysis and reply box', d.status === 200 && d.text.includes('AI analysis') && d.text.includes('Reply draft') && d.text.includes('Contact hints'), `${d.status}`);
+    }
+    const bad = await get('/leads/not-a-uuid', true);
+    check('a bad lead id shows the not-found page, not an error page', (bad.status === 404 || /could not be found/i.test(bad.text)) && !/Something went wrong/.test(bad.text), `${bad.status}`);
+    const keywords = await get('/keywords', true);
+    check('keywords page lists the seeded keywords', keywords.text.includes('need a website'));
+    const settings = await get('/settings', true);
+    check('settings page shows the four services', ['web_dev', 'saas', 'mobile_app', 'ai_automation'].every((s) => settings.text.includes(s)));
+  } finally {
+    if (userId) {
+      await admin.auth.admin.deleteUser(userId).catch(() => {}); // cascades to workspace_members
+      await admin.from('workspace_members').delete().eq('user_id', userId);
+    }
+  }
+
+  let failed = 0;
+  for (const r of results) {
+    console.log(`${r.ok ? 'PASS' : 'FAIL'}  ${r.name}${!r.ok && r.detail ? `  (${r.detail})` : ''}`);
+    if (!r.ok) failed += 1;
+  }
+  console.log(`\n${results.length - failed} of ${results.length} checks passed. The temporary user was deleted.`);
+  if (failed > 0) process.exitCode = 1;
+});

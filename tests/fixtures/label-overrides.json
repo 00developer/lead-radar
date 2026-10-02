@@ -1,0 +1,13 @@
+{
+ "note": "Owner labels from Phase 0 (y = genuine buyer) that conflict with decision D-33 (hiring posts are not leads). Eval reports metrics with and without these overrides.",
+ "overrides": {
+  "9000000000000025": {
+   "expected": "n",
+   "why": "Urgently hiring for web developer: recruiting, not buying (owner label was y)"
+  },
+  "9000000000000036": {
+   "expected": "n",
+   "why": "Looking for freelancers, drop your skill: recruiting, not buying (owner label was y)"
+  }
+ }
+}

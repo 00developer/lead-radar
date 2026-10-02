@@ -1,0 +1,17 @@
+.env
+.env.*
+!.env.example
+node_modules/
+out/
+.next/
+next-env.d.ts
+tsconfig.tsbuildinfo
+
+# Notes and docs stay on this computer only (owner decision 2026-10-02). The GitHub README.md is the stub GitHub created.
+docs/
+*.md
+
+# Real Threads posts and owner labels from Phase 0 stay on this computer only
+tests/fixtures/_real/
+spike/data/
+spike/out/
