@@ -11,6 +11,10 @@ const positiveInt = (fallback: number) => z.preprocess(blankToUndefined, z.coerc
 const schema = z.object({
   DATABASE_URL: optionalString,
   DATABASE_SSL_CA_PATH: optionalString,
+  /** The CA certificate itself (PEM text), for hosts without files such as Vercel. Line breaks may be written as \n. */
+  DATABASE_SSL_CA: optionalString,
+  /** Connections per server instance. Keep it small on serverless (1 or 2) so the database pooler is not exhausted. */
+  DATABASE_POOL_MAX: positiveInt(4),
 
   LLM_PROVIDER: z.preprocess(blankToUndefined, z.enum(['gemini']).default('gemini')),
   GEMINI_API_KEY: optionalString,

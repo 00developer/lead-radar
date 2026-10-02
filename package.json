@@ -2,6 +2,9 @@
   "name": "lead-radar",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22"
+  },
   "description": "Finds public Threads posts from people who want to hire developers, classifies them, and turns buyers into leads. See docs/.",
   "scripts": {
     "dev": "next dev --webpack",

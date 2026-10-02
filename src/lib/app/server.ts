@@ -17,13 +17,15 @@ export function serverEnv(): Env {
 export function getDb(): Db {
   if (!g.__leadRadarDb) {
     const env = serverEnv();
-    g.__leadRadarDb = createPgDb(requireValue(env.DATABASE_URL, 'DATABASE_URL'), env.DATABASE_SSL_CA_PATH);
+    g.__leadRadarDb = createPgDb(requireValue(env.DATABASE_URL, 'DATABASE_URL'), { caPath: env.DATABASE_SSL_CA_PATH, caPem: env.DATABASE_SSL_CA }, env.DATABASE_POOL_MAX);
   }
   return g.__leadRadarDb;
 }
 
 export function appUrl(): string {
-  return (serverEnv().APP_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+  // On Vercel the production address is provided automatically, so APP_URL is only needed for a custom domain.
+  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : undefined;
+  return (serverEnv().APP_URL ?? vercel ?? 'http://localhost:3000').replace(/\/$/, '');
 }
 
 export function oauthConfig(): OAuthConfig {

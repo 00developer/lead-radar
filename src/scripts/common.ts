@@ -40,7 +40,7 @@ export function strArg(args: Record<string, string | boolean>, name: string): st
 }
 
 export function openDb(env: Env): Db {
-  return createPgDb(requireValue(env.DATABASE_URL, 'DATABASE_URL'), env.DATABASE_SSL_CA_PATH);
+  return createPgDb(requireValue(env.DATABASE_URL, 'DATABASE_URL'), { caPath: env.DATABASE_SSL_CA_PATH, caPem: env.DATABASE_SSL_CA }, env.DATABASE_POOL_MAX);
 }
 
 export function openLlm(env: Env): Llm {
