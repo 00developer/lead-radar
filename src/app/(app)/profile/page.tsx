@@ -2,6 +2,7 @@ import { requireSession } from '../../../lib/auth';
 import { getDb } from '../../../lib/app/server';
 import { diffScan, getProfile, listSuggestions, MAX_SCANS_PER_DAY, scansToday } from '../../../lib/profile/store';
 import { listServices } from '../../../lib/dashboard/queries';
+import { LocalTime } from '../../../components/local-time';
 import { Badge, btn, btnDanger, btnPrimary, Card, ErrorBanner, input, Notice, PageHeader } from '../../../components/ui';
 import {
   acceptRescan, addOffering, analyzeText, confirmList, decideSuggestion, discardRescan, removeOffering, saveOffering, scanWebsite, startManually, suggestKeywordsAction,
@@ -102,7 +103,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
       {banners}
       <p className="mb-4 text-sm text-(--muted)">
         Website: {profile.website_url}
-        {profile.last_scanned_at ? ` · last scanned ${new Date(profile.last_scanned_at).toLocaleString()}` : ''}
+        {profile.last_scanned_at ? <> · last scanned <LocalTime value={profile.last_scanned_at} /></> : null}
         {profile.pages_fetched ? ` · ${profile.pages_fetched.length} page(s) read` : ''}
       </p>
       {profile.scan_notes && <p className="mb-4 text-xs text-(--muted)">{profile.scan_notes}</p>}

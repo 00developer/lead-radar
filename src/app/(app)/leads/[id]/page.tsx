@@ -5,6 +5,7 @@ import { getLead, nextUnlabeledLeadId, STATUSES } from '../../../../lib/dashboar
 import { extractContactHints, hasAnyHint } from '../../../../lib/contact-hints';
 import { Avatar, Badge, btn, btnPrimary, Card, ErrorBanner, IntentBadge, IntentRing, input } from '../../../../components/ui';
 import { saveLeadNotes, saveReplyDraft, setLeadStatus, setReviewLabel } from '../../../actions/leads';
+import { LocalTime } from '../../../../components/local-time';
 import { ReplyBox, Shortcuts } from './lead-tools';
 
 export const dynamic = 'force-dynamic';
@@ -42,8 +43,8 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
       </p>
       {error && <ErrorBanner>{error}</ErrorBanner>}
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="grid content-start gap-4 lg:col-span-2">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <div className="grid min-w-0 content-start gap-4">
           <Card>
             <div className="mb-4 flex items-center gap-4">
               <Avatar name={lead.author_handle} size={52} />
@@ -59,14 +60,14 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
                   {lead.needs_review && <Badge tone="warn">needs review</Badge>}
                   <span className="text-xs text-(--muted)">
                     {lead.source === 'apify_threads' ? 'Threads via Apify' : 'Threads official API'}
-                    {lead.posted_at ? ` · posted ${new Date(lead.posted_at).toLocaleString()}` : ''}
+                    {lead.posted_at ? <> · posted <LocalTime value={lead.posted_at} /></> : null}
                   </span>
                 </div>
               </div>
               <IntentRing score={lead.intent_score} size={60} />
             </div>
             {/* Post text is untrusted: rendered as escaped text only, never as HTML. */}
-            <p className="whitespace-pre-wrap break-words text-base">{lead.text}</p>
+            <p className="whitespace-pre-wrap wrap-break-word text-base">{lead.text}</p>
             <p className="mt-3 text-sm">
               <a className="underline" href={lead.post_url} target="_blank" rel="noopener noreferrer">
                 Open original post
@@ -91,7 +92,7 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
           </Card>
         </div>
 
-        <div className="grid content-start gap-4">
+        <div className="grid min-w-0 content-start gap-4">
           <Card title="AI analysis">
             <dl>
               <Row label="Type">{lead.author_type}</Row>
@@ -178,7 +179,7 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
               <ul className="grid gap-1 text-sm">
                 {events.map((e) => (
                   <li key={e.id}>
-                    <span className="text-(--muted)">{new Date(e.created_at).toLocaleString()}</span> ·{' '}
+                    <span className="text-(--muted)"><LocalTime value={e.created_at} /></span> ·{' '}
                     {e.event === 'status_changed' ? `status ${e.from_value} → ${e.to_value}` : e.event === 'labeled' ? `label ${e.from_value ?? 'none'} → ${e.to_value ?? 'none'}` : e.event === 'note_updated' ? 'notes updated' : e.event === 'alerted' ? 'alert email sent' : e.event}
                   </li>
                 ))}

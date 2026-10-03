@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { requireSession } from '../../../lib/auth';
 import { listRuns, listSources } from '../../../lib/dashboard/queries';
 import { Badge, btn, btnDanger, btnPrimary, Card, EmptyState, ErrorBanner, input, Notice, PageHeader, RunStatus } from '../../../components/ui';
+import { LocalTime } from '../../../components/local-time';
+import { RunButton } from '../../../components/run-button';
 import { saveSource } from '../../actions/workspace';
 import { disconnectThreads, runNow } from '../../actions/run';
 
@@ -56,7 +58,7 @@ export default async function SourcesPage({ searchParams }: { searchParams: Prom
               </ErrorBanner>
             )}
             <p className="text-(--muted)">
-              Token valid until {conn.token_expires_at ? new Date(conn.token_expires_at).toLocaleDateString() : 'unknown'} · about {queriesUsed} of {QUERY_LIMIT} searches used in the last 24 hours (the real number can be higher if you use other apps).
+              Token valid until {conn.token_expires_at ? <LocalTime value={conn.token_expires_at} dateOnly /> : 'unknown'} · about {queriesUsed} of {QUERY_LIMIT} searches used in the last 24 hours (the real number can be higher if you use other apps).
             </p>
           </div>
         ) : (
@@ -100,10 +102,14 @@ export default async function SourcesPage({ searchParams }: { searchParams: Prom
             </form>
             <form action={runNow} className="mt-3 border-t border-(--border) pt-3">
               <input type="hidden" name="source" value={src.source} />
-              <button className={btnPrimary} type="submit" disabled={!src.enabled}>
-                Run now
-              </button>
-              <span className="ml-3 text-xs text-(--muted)">
+              {src.enabled ? (
+                <RunButton />
+              ) : (
+                <button className={btnPrimary} type="submit" disabled>
+                  Run now
+                </button>
+              )}
+              <span className="ml-3 block text-xs text-(--muted) sm:inline">
                 Collects up to {src.max_results} posts (at most ${Number(src.max_spend_usd).toFixed(2)}), then classifies and sends alerts. It can take a few minutes; keep this tab open.
               </span>
             </form>
@@ -131,7 +137,7 @@ export default async function SourcesPage({ searchParams }: { searchParams: Prom
               <tbody>
                 {runs.map((r) => (
                   <tr key={r.id} className="border-t border-(--border) align-top">
-                    <td className="py-1.5">{new Date(r.started_at).toLocaleString()}</td>
+                    <td className="py-1.5"><LocalTime value={r.started_at} /></td>
                     <td className="py-1.5">{r.source}</td>
                     <td className="py-1.5">
                       <RunStatus status={r.status} />
