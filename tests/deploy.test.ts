@@ -20,3 +20,19 @@ describe('database certificate from the environment', () => {
     expect(() => parseEnv({ DATABASE_POOL_MAX: '0' })).toThrow();
   });
 });
+
+import { signInErrorKind } from '../src/lib/supabase/sign-in-error';
+
+describe('login error message', () => {
+  it('says wrong password only for a credentials problem', () => {
+    expect(signInErrorKind({ code: 'invalid_credentials', status: 400 })).toBe('invalid');
+    expect(signInErrorKind({ status: 400 })).toBe('invalid');
+  });
+  it('reports a restricted, rate limited or unreachable service as unavailable', () => {
+    expect(signInErrorKind({ status: 402 })).toBe('unavailable');
+    expect(signInErrorKind({ status: 429, code: 'over_request_rate_limit' })).toBe('unavailable');
+    expect(signInErrorKind({ status: 500 })).toBe('unavailable');
+    expect(signInErrorKind({ status: 0 })).toBe('unavailable');
+    expect(signInErrorKind({})).toBe('unavailable');
+  });
+});

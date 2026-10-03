@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { signInErrorKind } from '../../lib/supabase/sign-in-error';
 import { createSupabaseServerClient } from '../../lib/supabase/server';
 import { btnPrimary, ErrorBanner, input } from '../../components/ui';
 import { IconCheck, LogoMark } from '../../components/icons';
@@ -9,8 +10,8 @@ async function signIn(formData: FormData) {
   const password = String(formData.get('password') ?? '');
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  // One generic message: never reveal whether the email exists.
-  if (error) redirect('/login?error=invalid');
+  // One generic message for bad credentials: never reveal whether the email exists. A broken service is reported as such.
+  if (error) redirect(`/login?error=${signInErrorKind(error)}`);
   redirect('/');
 }
 
