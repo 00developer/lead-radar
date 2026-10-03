@@ -235,3 +235,55 @@ describe('invite email', () => {
     expect(JSON.parse(calls[0].body)).toMatchObject({ to: ['b@example.com'], subject: 'You are invited to Lead Radar' });
   });
 });
+
+import { canDeleteAccount, deleteWorkspaceIfEmpty, memberCount, typedWordMatches } from '../src/lib/phase4/account';
+
+describe('account deletion', () => {
+  it('needs the exact word DELETE', () => {
+    expect(typedWordMatches('DELETE')).toBe(true);
+    expect(typedWordMatches(' DELETE ')).toBe(true);
+    expect(typedWordMatches('delete')).toBe(false);
+    expect(typedWordMatches('')).toBe(false);
+    expect(typedWordMatches(null)).toBe(false);
+  });
+  it('does not allow a platform admin to delete their account from the app', async () => {
+    const admin = await newUser('del-admin@example.com');
+    await db.query('insert into platform_admins (user_id) values ($1)', [admin]);
+    expect((await canDeleteAccount(db, admin)).ok).toBe(false);
+    expect((await canDeleteAccount(db, await newUser('del-user@example.com'))).ok).toBe(true);
+  });
+  it('removes the whole workspace with all its data once the last member is gone, and leaves other workspaces alone', async () => {
+    const gone = await newUser('gone@example.com');
+    const stays = await newUser('stays@example.com');
+    const w1 = await createCustomerWorkspace(db, { name: 'Leaving Co', userId: gone });
+    const w2 = await createCustomerWorkspace(db, { name: 'Staying Co', userId: stays });
+    for (const w of [w1, w2]) {
+      const p = (await db.query<{ id: string }>("insert into posts (workspace_id, source, external_id, url, text, author_handle) values ($1,'apify_threads','x','https://x/y','need a site','h') returning id", [w])).rows[0].id;
+      await db.query("insert into keywords (workspace_id, term, language) values ($1,'need a site','en')", [w]);
+      await db.query("insert into threads_connections (workspace_id, threads_user_id, username, access_token_encrypted) values ($1,'1','u','ENC')", [w]);
+      await db.query("insert into ai_usage (workspace_id) values ($1)", [w]);
+      expect(p).toBeTruthy();
+    }
+    expect(await memberCount(db, w1)).toBe(1);
+    // The app deletes the login first (this removes the membership), then the workspace.
+    expect(await deleteWorkspaceIfEmpty(db, w1)).toBe(false);
+    await db.query('delete from auth.users where id = $1', [gone]);
+    expect(await memberCount(db, w1)).toBe(0);
+    expect(await deleteWorkspaceIfEmpty(db, w1)).toBe(true);
+
+    for (const t of ['posts', 'keywords', 'threads_connections', 'ai_usage', 'workspace_sources', 'workspace_plans', 'workspace_services', 'workspace_settings']) {
+      expect(Number((await db.query<{ n: string }>(`select count(*) n from ${t} where workspace_id = $1`, [w1])).rows[0].n), t).toBe(0);
+    }
+    expect(Number((await db.query<{ n: string }>('select count(*) n from posts where workspace_id = $1', [w2])).rows[0].n)).toBe(1);
+    expect(await memberCount(db, w2)).toBe(1);
+  });
+  it('keeps the workspace while another member is still in it', async () => {
+    const a = await newUser('multi-a@example.com');
+    const b = await newUser('multi-b@example.com');
+    const w = await createCustomerWorkspace(db, { name: 'Shared Co', userId: a });
+    await db.query("insert into workspace_members (workspace_id, user_id, role) values ($1,$2,'member')", [w, b]);
+    await db.query('delete from auth.users where id = $1', [a]);
+    expect(await deleteWorkspaceIfEmpty(db, w)).toBe(false);
+    expect(await memberCount(db, w)).toBe(1);
+  });
+});

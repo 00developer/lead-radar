@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { signInErrorKind } from '../../lib/supabase/sign-in-error';
 import { createSupabaseServerClient } from '../../lib/supabase/server';
-import { btnPrimary, ErrorBanner, input } from '../../components/ui';
+import { btnPrimary, ErrorBanner, input, Notice } from '../../components/ui';
 import { IconCheck, LogoMark } from '../../components/icons';
 
 async function signIn(formData: FormData) {
@@ -21,8 +21,8 @@ const POINTS = [
   ['You stay in control', 'Nothing is ever sent automatically. You decide who to contact and when.'],
 ];
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
-  const { error } = await searchParams;
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; deleted?: string }> }) {
+  const { error, deleted } = await searchParams;
   return (
     <div className="app-bg grid min-h-screen lg:grid-cols-[1.1fr_1fr]">
       {/* Brand panel */}
@@ -64,6 +64,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           </div>
           <h2 className="text-2xl font-semibold tracking-tight">Welcome back</h2>
           <p className="mb-7 mt-1 text-sm text-(--muted)">Sign in to see your leads.</p>
+          {deleted && <Notice>Your account and its data were deleted.</Notice>}
           {error === 'invalid' && <ErrorBanner>Email or password is wrong.</ErrorBanner>}
           {error === 'unavailable' && <ErrorBanner>The sign-in service is not reachable right now. Please try again in a minute.</ErrorBanner>}
           {error === 'no-workspace' && <ErrorBanner>This account has no workspace yet. Ask the owner to add it.</ErrorBanner>}

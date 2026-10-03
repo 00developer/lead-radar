@@ -8,6 +8,13 @@ export default function DataDeletionPage() {
       <p>You can remove your data from Lead Radar at any time.</p>
 
       <section>
+        <h2>Delete your whole account yourself</h2>
+        <ul>
+          <li>Sign in, open Settings, scroll to Delete my account, enter your password and type DELETE. Your login and your workspace data (leads, posts, keywords, notes and the Threads token) are deleted at once.</li>
+        </ul>
+      </section>
+
+      <section>
         <h2>Remove the Threads connection yourself</h2>
         <ul>
           <li>Sign in, open Settings, and choose Disconnect on the Threads account. The stored access token is deleted.</li>

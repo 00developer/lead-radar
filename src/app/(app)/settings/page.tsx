@@ -1,6 +1,7 @@
 import { requireSession } from '../../../lib/auth';
 import { getAiUsageThisMonth, getSettings, listServices } from '../../../lib/dashboard/queries';
-import { btn, btnPrimary, Card, ErrorBanner, input, Notice, PageHeader } from '../../../components/ui';
+import { btn, btnDanger, btnPrimary, Card, ErrorBanner, input, Notice, PageHeader } from '../../../components/ui';
+import { deleteMyAccount } from '../../actions/account';
 import { addService, saveService, saveSettings } from '../../actions/workspace';
 
 export const dynamic = 'force-dynamic';
@@ -100,6 +101,27 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
           </button>
         </form>
       </Card>
+
+      <div id="delete-account" className="mt-6">
+        <Card title="Delete my account">
+          <p className="mb-3 text-sm text-(--muted)">
+            This permanently deletes your login and your workspace: leads, posts, keywords, business profile, notes and the connected Threads token. It cannot be undone.
+          </p>
+          <form action={deleteMyAccount} autoComplete="off" className="flex flex-wrap items-end gap-3">
+            <label className="grid gap-1 text-sm">
+              Your password
+              <input className={`${input} w-60`} type="password" name="password" autoComplete="current-password" required />
+            </label>
+            <label className="grid gap-1 text-sm">
+              Type DELETE to confirm
+              <input className={`${input} w-48`} type="text" name="confirm" autoComplete="off" required />
+            </label>
+            <button className={btnDanger} type="submit">
+              Delete my account
+            </button>
+          </form>
+        </Card>
+      </div>
     </>
   );
 }
