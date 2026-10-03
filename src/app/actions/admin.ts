@@ -4,7 +4,9 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { requirePlatformAdmin } from '../../lib/app/admin';
-import { getDb } from '../../lib/app/server';
+import { appUrl, getDb, serverEnv } from '../../lib/app/server';
+import { createResendChannel } from '../../lib/alerts/email';
+import { buildInviteEmail } from '../../lib/phase4/invite-email';
 import { createInvite, MAX_INVITE_DAYS, revokeInvite } from '../../lib/phase4/invites';
 import { savePlan } from '../../lib/phase4/workspaces';
 
@@ -25,7 +27,22 @@ export async function createInviteAction(formData: FormData) {
   if (!parsed.success) back('error', `Check the invite: a valid email (or leave it empty) and 1 to ${MAX_INVITE_DAYS} days.`);
   const inv = await createInvite(getDb(), { createdBy: s.userId, email: parsed.data.email || null, note: parsed.data.note || null, days: parsed.data.days });
   revalidatePath('/admin');
-  redirect(`/admin?token=${encodeURIComponent(inv.token)}`);
+
+  // With an email address the link is also sent by email (when email is set up). The link is always shown too, as a fallback.
+  let notice = '';
+  if (parsed.data.email) {
+    const env = serverEnv();
+    if (!env.EMAIL_API_KEY || !env.ALERT_FROM_EMAIL) {
+      notice = 'Email sending is not set up yet, so nothing was emailed. Copy the link below and send it yourself.';
+    } else {
+      const link = `${appUrl()}/signup?token=${encodeURIComponent(inv.token)}`;
+      const sent = await createResendChannel({ apiKey: env.EMAIL_API_KEY, from: env.ALERT_FROM_EMAIL }).send(
+        buildInviteEmail({ inviteId: inv.id, to: parsed.data.email, link, expiresAt: inv.expiresAt }),
+      );
+      notice = sent.ok ? `Invite emailed to ${parsed.data.email}.` : `The email could not be sent (${sent.error}). Copy the link below and send it yourself.`;
+    }
+  }
+  redirect(`/admin?token=${encodeURIComponent(inv.token)}${notice ? `&notice=${encodeURIComponent(notice.slice(0, 300))}` : ''}`);
 }
 
 export async function revokeInviteAction(formData: FormData) {

@@ -209,3 +209,29 @@ describe('onboarding checklist', () => {
     expect((await getOnboardingSteps(db, id)).find((s) => s.key === 'collection')?.done).toBe(true);
   });
 });
+
+import { buildInviteEmail } from '../src/lib/phase4/invite-email';
+import { createResendChannel } from '../src/lib/alerts/email';
+
+describe('invite email', () => {
+  const link = 'https://app.example.com/signup?token=abc_DEF-123';
+  it('contains the link once in text and html, escaped, with a stable idempotency key', () => {
+    const m = buildInviteEmail({ inviteId: 'id-1', to: 'a@example.com', link: `${link}&x="<b>`, expiresAt: new Date('2026-10-10T10:00:00Z') });
+    expect(m.key).toBe('invite-id-1');
+    expect(m.to).toBe('a@example.com');
+    expect(m.text).toContain(link);
+    expect(m.html).toContain('&quot;&lt;b&gt;');
+    expect(m.html).not.toContain('<b>');
+    expect(m.text).toContain('10 Oct 2026');
+  });
+  it('is sent through the Resend channel to the invited address only', async () => {
+    const calls: { body: string }[] = [];
+    const channel = createResendChannel({
+      apiKey: 'k', from: 'Lead Radar <hi@example.com>',
+      fetchFn: async (_url, init) => { calls.push({ body: init.body }); return { ok: true, status: 200, json: async () => ({ id: 'x' }) }; },
+    });
+    const r = await channel.send(buildInviteEmail({ inviteId: 'id-2', to: 'b@example.com', link, expiresAt: new Date() }));
+    expect(r.ok).toBe(true);
+    expect(JSON.parse(calls[0].body)).toMatchObject({ to: ['b@example.com'], subject: 'You are invited to Lead Radar' });
+  });
+});

@@ -32,7 +32,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 
       <div className="mb-6 grid gap-4">
         <Card title="Create an invite">
-          <p className="mb-3 text-sm text-(--muted)">The app does not send emails yet. You get a link below; copy it and send it yourself. An email here only limits who can use the link.</p>
+          <p className="mb-3 text-sm text-(--muted)">If you enter an email, the link is emailed to that address and only that email can use it. The link is also shown below, so you can send it yourself.</p>
           <form action={createInviteAction} className="flex flex-wrap items-end gap-3">
             <label className="grid gap-1 text-sm">
               Customer email (optional)
