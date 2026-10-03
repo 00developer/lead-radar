@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { getDb } from '../../lib/app/server';
+import { createSupabaseServerClient } from '../../lib/supabase/server';
 import { findOpenInvite } from '../../lib/phase4/invites';
 import { btnPrimary, ErrorBanner, input } from '../../components/ui';
 import { LogoMark } from '../../components/icons';
@@ -27,6 +28,15 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
     unavailable = true;
   }
 
+  // A browser keeps one login per site. Creating an account here would replace whoever is signed in now.
+  let signedInAs: string | null = null;
+  try {
+    const { data } = await (await createSupabaseServerClient()).auth.getClaims();
+    if (data?.claims?.sub) signedInAs = typeof data.claims.email === 'string' ? data.claims.email : 'another account';
+  } catch {
+    // Not signed in, or the service is down: the form below handles both.
+  }
+
   return (
     <div className="app-bg grid min-h-screen place-items-center px-5 py-12">
       <main className="rise w-full max-w-sm">
@@ -48,6 +58,11 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
           <>
             <h1 className="text-2xl font-semibold tracking-tight">Create your account</h1>
             <p className="mb-6 mt-1 text-sm text-(--muted)">You were invited. This takes a minute.</p>
+            {signedInAs && (
+              <ErrorBanner>
+                This browser is signed in as {signedInAs}. Creating the new account will sign that account out here. To keep both, open this link in a private window.
+              </ErrorBanner>
+            )}
             {error && ERRORS[error] && <ErrorBanner>{ERRORS[error]}</ErrorBanner>}
             <form action={signUp} className="card grid gap-4 p-6">
               <input type="hidden" name="token" value={token} />
