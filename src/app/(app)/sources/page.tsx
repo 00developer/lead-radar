@@ -6,6 +6,8 @@ import { saveSource } from '../../actions/workspace';
 import { disconnectThreads, runNow } from '../../actions/run';
 
 export const dynamic = 'force-dynamic';
+// "Run now" is a Server Action on this page: it collects and classifies in one request, which can take minutes.
+export const maxDuration = 300;
 
 const LABEL: Record<string, string> = { apify_threads: 'Threads via Apify (bridge)', threads_api: 'Threads official API' };
 const NOTE: Record<string, string> = {
