@@ -3,9 +3,12 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
-import { IconChart, IconClose, IconKeywords, IconLeads, IconLogout, IconMenu, IconOverview, IconProfile, IconSettings, IconSources, LogoMark } from './icons';
+import { IconChart, IconClose, IconKeywords, IconLeads, IconLogout, IconMenu, IconOverview, IconProfile, IconSettings, IconSources, IconTarget, LogoMark } from './icons';
 
-const NAV = [
+type NavItem = { href: string; label: string; icon: typeof IconOverview; group: string; badge?: boolean };
+
+const NAV: NavItem[] = [
+  { href: '/onboarding', label: 'Setup guide', icon: IconTarget, group: 'Workspace' },
   { href: '/', label: 'Overview', icon: IconOverview, group: 'Workspace' },
   { href: '/leads', label: 'Leads', icon: IconLeads, group: 'Workspace', badge: true },
   { href: '/keywords', label: 'Keywords', icon: IconKeywords, group: 'Workspace' },
@@ -15,20 +18,23 @@ const NAV = [
   { href: '/settings', label: 'Settings', icon: IconSettings, group: 'Account' },
 ];
 
+const ADMIN_NAV: NavItem = { href: '/admin', label: 'Admin', icon: IconProfile, group: 'Account' };
+
 function isActive(path: string, href: string) {
   return href === '/' ? path === '/' : path === href || path.startsWith(`${href}/`);
 }
 
 export function AppShell({
-  children, workspaceName, email, newLeads, signOut,
+  children, workspaceName, email, newLeads, isAdmin = false, signOut,
 }: {
-  children: ReactNode; workspaceName: string; email: string | null; newLeads: number; signOut: () => Promise<void>;
+  children: ReactNode; workspaceName: string; email: string | null; newLeads: number; isAdmin?: boolean; signOut: () => Promise<void>;
 }) {
   const path = usePathname();
   const [open, setOpen] = useState(false);
   useEffect(() => setOpen(false), [path]); // close the drawer after navigating on phones
 
-  const groups = [...new Set(NAV.map((n) => n.group))];
+  const nav = isAdmin ? [...NAV, ADMIN_NAV] : NAV;
+  const groups = [...new Set(nav.map((n) => n.group))];
   const initial = (email ?? workspaceName)[0]?.toUpperCase() ?? '?';
 
   const sidebar = (
@@ -46,7 +52,7 @@ export function AppShell({
           <div key={g}>
             <p className="mb-2 px-3 text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-(--muted) opacity-80">{g}</p>
             <ul className="space-y-1">
-              {NAV.filter((n) => n.group === g).map((n) => {
+              {nav.filter((n) => n.group === g).map((n) => {
                 const Icon = n.icon;
                 const active = isActive(path, n.href);
                 return (

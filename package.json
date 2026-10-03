@@ -15,6 +15,7 @@
     "migrate": "tsx src/scripts/migrate.ts",
     "seed": "tsx src/scripts/seed.ts",
     "create-user": "tsx src/scripts/create-user.ts",
+    "grant-admin": "tsx src/scripts/grant-admin.ts",
     "alerts": "tsx src/scripts/alerts.ts",
     "verify:rls": "tsx src/scripts/verify-rls.ts",
     "smoke:ui": "tsx src/scripts/smoke-ui.ts",

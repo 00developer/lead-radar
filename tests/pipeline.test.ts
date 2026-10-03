@@ -64,7 +64,8 @@ describe('schema (migration)', () => {
     expect(tables.rows.length).toBeGreaterThanOrEqual(15);
     for (const t of tables.rows) {
       expect(t.rls, `RLS on ${t.table_name}`).toBe(true);
-      if (!['workspaces', 'workspace_members'].includes(t.table_name)) expect(t.has_ws, `workspace_id on ${t.table_name}`).toBe(true);
+      // Platform-level tables (Phase 4) belong to the app owner, not to a workspace, and have no policies at all.
+      if (!['workspaces', 'workspace_members', 'platform_admins', 'invites'].includes(t.table_name)) expect(t.has_ws, `workspace_id on ${t.table_name}`).toBe(true);
     }
   });
   it('the monthly usage function is atomic per workspace and respects the ceiling', async () => {

@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { supabaseConfig } from './config';
 
 // Paths that need no login. Cron routes protect themselves with CRON_SECRET; the Threads callback checks its own state value.
-const PUBLIC_PREFIXES = ['/login', '/api/cron/', '/privacy', '/terms', '/data-deletion'];
+const PUBLIC_PREFIXES = ['/login', '/signup','/api/cron/', '/privacy', '/terms', '/data-deletion'];
 
 /** Refreshes the auth session and sends anonymous visitors to /login. Optimistic check only: pages and actions verify again. */
 export async function updateSession(request: NextRequest): Promise<NextResponse> {

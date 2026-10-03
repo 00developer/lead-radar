@@ -27,7 +27,7 @@ const KEYWORDS: { term: string; service: string | null; enabled: boolean }[] = [
 
 // Multi-word seller phrases only. "portfolio" and "we build" were left out on purpose: buyers write
 // "send me your portfolio" and "we build apps and need help", so they would hide real leads.
-const NEGATIVE = ['we offer', 'hire us', 'DM for services', 'our agency', 'available for projects', 'open for work', 'DM for quote', 'starting at'];
+export const NEGATIVE = ['we offer', 'hire us', 'DM for services', 'our agency', 'available for projects', 'open for work', 'DM for quote', 'starting at'];
 
 export async function seedOwnerWorkspace(db: Db, name = 'My company'): Promise<string> {
   const existing = await db.query<{ id: string }>('select id from workspaces where name = $1 order by created_at limit 1', [name]);
@@ -57,6 +57,11 @@ export async function seedOwnerWorkspace(db: Db, name = 'My company'): Promise<s
       [id, source, enabled],
     );
   }
+  // The owner's own workspace may use everything up to the old maximums. Customer workspaces get a restricted plan (phase4/workspaces.ts).
+  await db.query(
+    "insert into workspace_plans (workspace_id, allow_apify, allow_official_api, max_results_cap, max_spend_cap_usd, ai_monthly_cap, note) values ($1, true, true, 1000, 50, 100000, 'Owner workspace') on conflict do nothing",
+    [id],
+  );
   for (const term of NEGATIVE) {
     await db.query(
       "insert into keywords (workspace_id, term, language, is_negative) values ($1,$2,'en',true) on conflict (workspace_id, term, is_negative) do nothing",

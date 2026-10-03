@@ -82,6 +82,8 @@ export async function saveSettings(formData: FormData) {
       email: formData.get('alert_email') ?? '',
     });
   if (!parsed.success) back('/settings', 'Check the numbers: thresholds 0 to 100, age 1 to 365 days, and a valid email.');
+  const { data: plan } = await s.supabase.from('workspace_plans').select('ai_monthly_cap').eq('workspace_id', s.workspaceId).maybeSingle();
+  const planCeiling = plan ? plan.ai_monthly_cap : 0;
   const languages = LANGS.filter((l) => formData.getAll('languages').includes(l));
   if (languages.length === 0) back('/settings', 'Pick at least one language.');
 
@@ -92,7 +94,7 @@ export async function saveSettings(formData: FormData) {
       alert_intent_threshold: parsed.data.alert,
       max_post_age_days: parsed.data.age,
       // The workspace setting can never exceed the global safety ceiling from the environment.
-      ai_monthly_ceiling: Math.min(parsed.data.ceiling, globalCeiling),
+      ai_monthly_ceiling: Math.min(parsed.data.ceiling, globalCeiling, planCeiling),
       alert_email: parsed.data.email || null,
       allowed_languages: languages,
       updated_at: new Date().toISOString(),
@@ -148,12 +150,23 @@ export async function saveSource(formData: FormData) {
     })
     .safeParse({ source: formData.get('source'), max_results: formData.get('max_results'), max_spend_usd: formData.get('max_spend_usd') });
   if (!parsed.success) back('/sources', 'Max results 1 to 1000, max spend $0 to $50.');
+  // The plan is set by the app owner. The real limit is enforced again when a run starts; this gives a clear message first.
+  const { data: plan } = await s.supabase
+    .from('workspace_plans')
+    .select('allow_apify, allow_official_api, max_results_cap, max_spend_cap_usd')
+    .eq('workspace_id', s.workspaceId)
+    .maybeSingle();
+  const wantsOn = formData.get('enabled') === 'on';
+  const allowed = plan ? (parsed.data.source === 'apify_threads' ? plan.allow_apify : plan.allow_official_api) : false;
+  if (wantsOn && !allowed) back('/sources', 'This source is not enabled for your workspace yet. Ask the app owner to enable it.');
+  const maxResults = plan ? Math.min(parsed.data.max_results, plan.max_results_cap) : parsed.data.max_results;
+  const maxSpend = plan ? Math.min(parsed.data.max_spend_usd, Number(plan.max_spend_cap_usd)) : parsed.data.max_spend_usd;
   const { error } = await s.supabase
     .from('workspace_sources')
     .update({
-      enabled: formData.get('enabled') === 'on',
-      max_results: parsed.data.max_results,
-      max_spend_usd: parsed.data.max_spend_usd,
+      enabled: wantsOn,
+      max_results: maxResults,
+      max_spend_usd: maxSpend,
       updated_at: new Date().toISOString(),
     })
     .eq('workspace_id', s.workspaceId)

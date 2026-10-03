@@ -7,6 +7,7 @@ import { requireSession } from '../../lib/auth';
 import { getDb, serverEnv, appUrl } from '../../lib/app/server';
 import { realLlm } from '../../lib/app/deps';
 import { createNodeTransport } from '../../lib/profile/transport';
+import { workspaceAiCeiling } from '../../lib/phase4/workspaces';
 import { analyzePastedText, scanWebsiteForProfile, suggestKeywordsForProfile } from '../../lib/profile/run';
 import {
   acceptPendingScan, addManualOffering, approveSuggestion, confirmProfile, deleteOffering, discardPendingScan, ensureProfile, rejectSuggestion, updateOffering,
@@ -26,7 +27,7 @@ export async function scanWebsite(formData: FormData) {
   let r;
   try {
     r = await scanWebsiteForProfile(getDb(), s.workspaceId, url.data, {
-      transport: createNodeTransport(), llm: realLlm(), appUrl: appUrl(), ceiling: Math.min(serverEnv().AI_MONTHLY_CEILING, 100_000),
+      transport: createNodeTransport(), llm: realLlm(), appUrl: appUrl(), ceiling: await workspaceAiCeiling(getDb(), s.workspaceId, Math.min(serverEnv().AI_MONTHLY_CEILING, 100_000)),
     });
   } catch (e) {
     go('error', e instanceof Error ? e.message : 'The scan failed.');
@@ -44,7 +45,7 @@ export async function analyzeText(formData: FormData) {
   if (!text.success) go('error', 'That text is too long.');
   let r;
   try {
-    r = await analyzePastedText(getDb(), s.workspaceId, text.data, { llm: realLlm(), ceiling: Math.min(serverEnv().AI_MONTHLY_CEILING, 100_000) });
+    r = await analyzePastedText(getDb(), s.workspaceId, text.data, { llm: realLlm(), ceiling: await workspaceAiCeiling(getDb(), s.workspaceId, Math.min(serverEnv().AI_MONTHLY_CEILING, 100_000)) });
   } catch (e) {
     go('error', e instanceof Error ? e.message : 'The analysis failed.');
   }
@@ -126,7 +127,7 @@ export async function suggestKeywordsAction() {
   const s = await requireSession();
   let r;
   try {
-    r = await suggestKeywordsForProfile(getDb(), s.workspaceId, { llm: realLlm(), ceiling: Math.min(serverEnv().AI_MONTHLY_CEILING, 100_000) });
+    r = await suggestKeywordsForProfile(getDb(), s.workspaceId, { llm: realLlm(), ceiling: await workspaceAiCeiling(getDb(), s.workspaceId, Math.min(serverEnv().AI_MONTHLY_CEILING, 100_000)) });
   } catch (e) {
     go('error', e instanceof Error ? e.message : 'Could not suggest keywords.');
   }

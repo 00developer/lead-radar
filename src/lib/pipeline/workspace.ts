@@ -1,6 +1,7 @@
 import type { Db } from '../db/types';
 import { promptVersionFor, type PromptService } from '../classifier/prompt';
 import { loadConfirmedProfile } from '../profile/store';
+import { effectiveAiCeiling, getPlan } from '../phase4/workspaces';
 
 export type WorkspaceContext = {
   id: string;
@@ -62,6 +63,7 @@ export async function loadWorkspace(db: Db, workspaceId: string): Promise<Worksp
     [workspaceId],
   );
   const profile = await loadConfirmedProfile(db, workspaceId);
+  const plan = await getPlan(db, workspaceId);
   const kws = await db.query<{ term: string; language: string; is_negative: boolean }>(
     'select term, language, is_negative from keywords where workspace_id = $1 and enabled order by created_at, term',
     [workspaceId],
@@ -74,7 +76,8 @@ export async function loadWorkspace(db: Db, workspaceId: string): Promise<Worksp
       alertThreshold: s.alert_intent_threshold,
       maxPostAgeDays: s.max_post_age_days,
       allowedLanguages: s.allowed_languages,
-      aiMonthlyCeiling: s.ai_monthly_ceiling,
+      // Never more than the owner-controlled plan allows (a workspace without a plan gets no AI calls).
+      aiMonthlyCeiling: effectiveAiCeiling(s.ai_monthly_ceiling, plan),
       alertEmail: s.alert_email,
     },
     services: services.rows,

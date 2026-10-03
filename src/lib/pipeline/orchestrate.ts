@@ -8,6 +8,7 @@ import type { Llm } from '../classifier/llm';
 import { createThreadsApiCollector } from '../collectors/threads-api';
 import { loadActiveToken, refreshIfNeeded, type OAuthConfig } from '../threads/oauth';
 import { runPipelineOnce, type PipelineSummary } from './run-all';
+import { effectiveLimits, getPlan, sourceAllowed } from '../phase4/workspaces';
 
 export type OrchestrateDeps = {
   /** Builds the collector for a source. Kept as a function so tests and dry runs can swap it. */
@@ -33,6 +34,11 @@ export async function runWorkspacePipeline(db: Db, workspaceId: string, source: 
   if (!row) return { ok: false, error: `Source ${source} is not set up for this workspace.` };
   if (!row.enabled) return { ok: false, error: `Source ${source} is switched off. Enable it under Sources & Runs first.` };
 
+  // The owner-controlled plan is the real limit: a workspace can never collect more than its plan allows, whatever it saved itself.
+  const plan = await getPlan(db, workspaceId);
+  if (!plan || !sourceAllowed(plan, source)) return { ok: false, error: 'Collection from this source is not enabled for your workspace yet. Ask the app owner to enable it.' };
+  const limits = effectiveLimits(plan, { maxResults: row.max_results, maxSpendUsd: Number(row.max_spend_usd) });
+
   // One run at a time per workspace (a stuck 'running' row older than 15 minutes is ignored).
   const busy = await db.query(
     "select 1 from collector_runs where workspace_id = $1 and status = 'running' and started_at > now() - interval '15 minutes' limit 1",
@@ -48,8 +54,8 @@ export async function runWorkspacePipeline(db: Db, workspaceId: string, source: 
   }
 
   const summary = await runPipelineOnce(db, workspaceId, collector, deps.llm, {
-    maxResults: row.max_results,
-    maxSpendUsd: Number(row.max_spend_usd),
+    maxResults: limits.maxResults,
+    maxSpendUsd: limits.maxSpendUsd,
     maxCalls: deps.maxCalls,
     globalMonthlyCeiling: deps.globalMonthlyCeiling,
     now: deps.now,

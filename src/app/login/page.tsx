@@ -80,6 +80,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
               Sign in
             </button>
           </form>
+          <p className="mt-5 text-center text-xs text-(--muted)">Lead Radar is invite-only for now. Open the invite link you received to create your account.</p>
         </div>
       </main>
     </div>

@@ -96,11 +96,28 @@ run(async () => {
     const fn = await a.rpc('try_record_ai_usage', { p_workspace_id: wsA, p_kind: 'classify', p_ceiling: 5 });
     check('a user cannot call try_record_ai_usage', !!fn.error, fn.error?.message);
 
+    // 3b. Phase 4: plans, invites and admins
+    const plans = await a.from('workspace_plans').select('workspace_id');
+    check('user A can read their own plan only', !plans.error && plans.data?.length === 1 && plans.data[0].workspace_id === wsA, plans.error?.message);
+    const planUpd = await a.from('workspace_plans').update({ max_results_cap: 5 }).eq('workspace_id', wsA).select('workspace_id');
+    const planNow = await db.query<{ max_results_cap: number }>('select max_results_cap from workspace_plans where workspace_id = $1', [wsA]);
+    check('user A cannot change their own plan', (!!planUpd.error || planUpd.data?.length === 0) && planNow.rows[0].max_results_cap === 1000);
+    const planIns = await a.from('workspace_plans').insert({ workspace_id: wsB }).select('workspace_id');
+    check('user A cannot add a plan row', !!planIns.error || planIns.data?.length === 0);
+    await db.query("insert into invites (token_hash, expires_at) values ($1, now() + interval '1 day')", [`rls-${tag}`]);
+    const inv = await a.from('invites').select('id');
+    check('user A cannot read invites', !!inv.error || inv.data?.length === 0);
+    const adm = await a.from('platform_admins').select('user_id');
+    check('user A cannot read the platform admin list', !!adm.error || adm.data?.length === 0);
+    const admIns = await a.from('platform_admins').insert({ user_id: userA }).select('user_id');
+    check('user A cannot make themselves a platform admin', !!admIns.error || admIns.data?.length === 0);
+
     // 4. Not logged in
     const anonLeads = await anon.from('lead_inbox').select('id');
     check('a visitor who is not logged in sees no leads', !anonLeads.error && anonLeads.data?.length === 0);
   } finally {
     // Clean up everything created here.
+    await db.query('delete from invites where token_hash = $1', [`rls-${tag}`]).catch(() => {});
     for (const id of created.workspaceIds) await db.query('delete from workspaces where id = $1', [id]).catch(() => {});
     for (const id of created.userIds) await admin.auth.admin.deleteUser(id).catch(() => {});
     await db.close();
