@@ -23,6 +23,10 @@ export default async function SourcesPage({ searchParams }: { searchParams: Prom
   const s = await requireSession();
   const [sources, runs] = await Promise.all([listSources(s), listRuns(s, 20)]);
 
+  // The app owner decides which sources a workspace may use (Admin page). Members can read their plan but not change it.
+  const { data: plan } = await s.supabase.from('workspace_plans').select('allow_apify, allow_official_api').eq('workspace_id', s.workspaceId).maybeSingle();
+  const allowed = (source: string) => (plan ? (source === 'apify_threads' ? plan.allow_apify : plan.allow_official_api) : false);
+
   const { data: conn } = await s.supabase
     .from('threads_connections')
     .select('username,status,token_expires_at,connected_at,last_error')
@@ -83,10 +87,13 @@ export default async function SourcesPage({ searchParams }: { searchParams: Prom
         {sources.map((src) => (
           <Card key={src.source} title={LABEL[src.source] ?? src.source}>
             <p className="mb-3 text-sm text-(--muted)">{NOTE[src.source]}</p>
-            <form action={saveSource} className="flex flex-wrap items-end gap-3">
+            {!allowed(src.source) && (
+              <p className="mb-3 text-sm font-medium">Not switched on for your workspace yet. Collection costs money, so the app owner turns it on for you. Until then Run now stays off.</p>
+            )}
+            <form action={saveSource} autoComplete="off" className="flex flex-wrap items-end gap-3">
               <input type="hidden" name="source" value={src.source} />
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" name="enabled" defaultChecked={src.enabled} /> Enabled
+                <input type="checkbox" name="enabled" defaultChecked={src.enabled && allowed(src.source)} disabled={!allowed(src.source)} /> Enabled
               </label>
               <label className="grid gap-1 text-sm">
                 Max results per run
