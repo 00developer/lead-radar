@@ -2,14 +2,15 @@ import type { ReactNode } from 'react';
 import { IconAlert, IconCheck, IconSparkle } from './icons';
 
 // ---- class strings used across pages ------------------------------------------------------------------
+// On phones controls get a 44px tap height and inputs use 16px text (smaller text makes iPhones zoom in when a field is tapped).
 export const btn =
-  'inline-flex items-center justify-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium border border-(--border) bg-(--surface-2) text-(--fg) transition hover:border-[color-mix(in_srgb,var(--accent)_50%,var(--border))] hover:bg-(--neutral-bg) disabled:opacity-50 disabled:pointer-events-none';
+  'inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium sm:min-h-0 border border-(--border) bg-(--surface-2) text-(--fg) transition hover:border-[color-mix(in_srgb,var(--accent)_50%,var(--border))] hover:bg-(--neutral-bg) disabled:opacity-50 disabled:pointer-events-none';
 export const btnPrimary =
-  'btn-grad inline-flex items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-50 disabled:pointer-events-none';
+  'btn-grad inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold sm:min-h-0 disabled:opacity-50 disabled:pointer-events-none';
 export const btnDanger =
-  'inline-flex items-center justify-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium border border-[color-mix(in_srgb,var(--bad)_45%,var(--border))] text-(--bad) transition hover:bg-(--bad-bg) disabled:opacity-50';
+  'inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium sm:min-h-0 border border-[color-mix(in_srgb,var(--bad)_45%,var(--border))] text-(--bad) transition hover:bg-(--bad-bg) disabled:opacity-50';
 export const input =
-  'w-full rounded-lg border border-(--border) bg-(--surface-2) px-3 py-2 text-sm text-(--fg) placeholder:text-(--muted) transition focus:border-(--accent)';
+  'w-full min-h-11 rounded-lg border border-(--border) bg-(--surface-2) px-3 py-2 text-base sm:min-h-0 sm:text-sm text-(--fg) placeholder:text-(--muted) transition focus:border-(--accent)';
 
 // ---- layout pieces --------------------------------------------------------------------------------------
 export function PageHeader({ title, subtitle, children }: { title: string; subtitle?: string; children?: ReactNode }) {

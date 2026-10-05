@@ -157,7 +157,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
                     <option value="">No service link</option>
                     {services.map((sv) => <option key={sv.id} value={sv.id}>{sv.name}</option>)}
                   </select>
-                  <div className="flex items-center gap-2 md:col-span-4">
+                  <div className="flex flex-wrap items-center gap-2 md:col-span-4">
                     <button className={btn} type="submit">Save</button>
                     <Badge tone={o.confirmed ? 'good' : 'warn'}>{o.confirmed ? 'confirmed' : 'needs confirming'}</Badge>
                     <Badge>{o.origin === 'manual' ? 'added by hand' : 'from website'}</Badge>

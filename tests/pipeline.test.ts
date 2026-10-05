@@ -286,4 +286,27 @@ describe('export', () => {
     expect(csv).toContain('classified as seller');
     expect((await exportLeadsCsv(db, ws)).csv).not.toContain('classified as seller');
   });
+
+  it('caps the rows when a limit is given (the dashboard download uses 2000)', async () => {
+    const id = await newWorkspace();
+    await runPipelineOnce(db, id, collectorOf([...posts, post('91', 'I need a website for my second brand')]), createFakeLlm(), opts);
+    const ws = await loadWorkspace(db, id);
+    const all = await exportLeadsCsv(db, ws, { includeHidden: true });
+    expect([all.leads, all.hidden]).toEqual([2, 2]);
+    const capped = await exportLeadsCsv(db, ws, { includeHidden: true, limit: 1 });
+    expect(capped.leads).toBe(1);
+    expect(capped.hidden).toBe(1);
+  });
+
+  it('exports only the leads of the given workspace and includes the notes', async () => {
+    const mine = await newWorkspace();
+    const other = await newWorkspace();
+    await runPipelineOnce(db, mine, collectorOf([post('92', buyer)]), createFakeLlm(), opts);
+    await runPipelineOnce(db, other, collectorOf([post('93', buyer)]), createFakeLlm(), opts);
+    await db.query("update leads set notes = 'called on Monday' where workspace_id = $1", [mine]);
+    const csv = (await exportLeadsCsv(db, await loadWorkspace(db, mine))).csv;
+    expect(csv).toContain('called on Monday');
+    expect(csv).toContain('u92');
+    expect(csv).not.toContain('u93');
+  });
 });

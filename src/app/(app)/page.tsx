@@ -64,9 +64,9 @@ export default async function OverviewPage() {
           </div>
 
           <Card title="Leads per day" aside={<span className="text-xs text-(--muted)">last 14 days</span>}>
-            <div className="flex h-40 items-end gap-2" role="img" aria-label={`Leads per day: ${o.perDay.map((d) => `${d.day} ${d.n}`).join(', ')}`}>
+            <div className="flex h-40 items-end gap-1 sm:gap-2" role="img" aria-label={`Leads per day: ${o.perDay.map((d) => `${d.day} ${d.n}`).join(', ')}`}>
               {o.perDay.map((d) => (
-                <div key={d.day} className="group flex flex-1 flex-col items-center justify-end gap-1.5" title={`${d.day}: ${d.n} lead${d.n === 1 ? '' : 's'}`}>
+                <div key={d.day} className="group flex min-w-0 flex-1 flex-col items-center justify-end gap-1.5" title={`${d.day}: ${d.n} lead${d.n === 1 ? '' : 's'}`}>
                   <span className="text-[11px] font-medium tabular-nums text-(--muted) opacity-0 transition group-hover:opacity-100">{d.n}</span>
                   <div
                     className={d.n ? 'grad-bg w-full rounded-t-lg transition group-hover:brightness-110' : 'w-full rounded-t-lg bg-(--neutral-bg)'}

@@ -45,6 +45,10 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
         <Link className={hiddenView ? btnPrimary : btn} href="/leads?view=hidden">
           Hidden by AI
         </Link>
+        {/* A plain link: the browser downloads the file. Not a Next Link, so nothing is prefetched. */}
+        <a className={btn} href={hiddenView ? '/api/leads/export?hidden=1' : '/api/leads/export'} download>
+          {hiddenView ? 'Export to Excel (with hidden)' : 'Export to Excel'}
+        </a>
       </PageHeader>
       {p.error && <ErrorBanner>{p.error}</ErrorBanner>}
 
@@ -64,9 +68,10 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
             </select>
             <select name="min" defaultValue={p.min ?? ''} className={input} aria-label="Minimum intent">
               <option value="">Any intent</option>
+              <option value="90">90 and above</option>
               <option value="80">80 and above</option>
+              <option value="70">70 and above</option>
               <option value="60">60 and above</option>
-              <option value="40">40 and above</option>
             </select>
             <select name="status" defaultValue={p.status ?? ''} className={input} aria-label="Status">
               <option value="">Any status</option>
@@ -130,13 +135,22 @@ async function LeadList({ s, p, page, qs }: { s: Awaited<ReturnType<typeof requi
       </EmptyState>
     );
   }
+  const filtered = Object.entries(p).some(([k, v]) => v && k !== 'page' && k !== 'error');
+  const from = (page - 1) * PAGE_SIZE + 1;
   return (
     <>
+      <p className="mb-3 text-sm text-(--muted)" aria-live="polite">
+        {filtered ? `${total} lead${total === 1 ? '' : 's'} match your filters` : `${total} lead${total === 1 ? '' : 's'}`}
+        {total > rows.length ? ` · showing ${from} to ${from + rows.length - 1}` : ''} · highest intent first
+      </p>
       <ul className="grid gap-3">
         {rows.map((r) => (
           <li key={r.id}>
-            <Link href={`/leads/${r.id}`} className="card card-hover rise flex gap-4 p-4 sm:p-5">
-              <Avatar name={r.author_handle ?? '?'} size={44} />
+            <Link href={`/leads/${r.id}`} className="card card-hover rise flex gap-3 p-4 sm:gap-4 sm:p-5">
+              {/* The avatar is hidden on phones so the post text keeps its width. */}
+              <span className="hidden sm:block">
+                <Avatar name={r.author_handle ?? '?'} size={44} />
+              </span>
               <div className="min-w-0 flex-1">
                 <div className="mb-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
                   <span className="font-semibold">@{r.author_handle}</span>

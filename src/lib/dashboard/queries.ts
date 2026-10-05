@@ -70,7 +70,12 @@ export async function listLeads(s: Session, f: LeadFilters) {
   if (f.source) q = q.eq('source', f.source);
   if (f.label === 'none') q = q.is('review_label', null);
   else if (f.label) q = q.eq('review_label', f.label);
-  if (f.days) q = q.gte('created_at', new Date(Date.now() - f.days * 86_400_000).toISOString());
+  if (f.days) {
+    // Same date the lead card shows ("3 days ago" is the post's age): when the post was written, or when the lead was
+    // created if the source gave no post time. The values are quoted because an ISO time contains ":" and ".".
+    const since = new Date(Date.now() - f.days * 86_400_000).toISOString();
+    q = q.or(`posted_at.gte."${since}",and(posted_at.is.null,created_at.gte."${since}")`);
+  }
   const { data, count, error } = await q
     .order('intent_score', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })

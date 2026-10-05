@@ -56,6 +56,15 @@ html {
   color-scheme: light dark;
 }
 
+/* A grid without explicit columns gets one column that may shrink to the screen. Without this the column grows to its widest
+   content (a table, a long badge row) and the whole page scrolls sideways on a phone. Lives in the base layer, so every
+   grid-cols-* utility still wins. */
+@layer base {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 body {
   background: var(--bg);
   color: var(--fg);

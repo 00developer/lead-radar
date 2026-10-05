@@ -7,6 +7,8 @@ const TUNNEL_HOSTS = ['*.trycloudflare.com', '*.ngrok-free.app', '*.ngrok-free.d
 const dev = process.env.NODE_ENV !== 'production';
 
 const config: NextConfig = {
+  // The Excel library is large; loading it from node_modules at run time keeps the build fast and the bundle small.
+  serverExternalPackages: ['exceljs'],
   ...(dev ? { allowedDevOrigins: TUNNEL_HOSTS, experimental: { serverActions: { allowedOrigins: TUNNEL_HOSTS } } } : {}),
 };
 

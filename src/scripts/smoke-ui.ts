@@ -52,6 +52,8 @@ run(async () => {
       const r = await get(p, false);
       check(`visitor is sent to /login from ${p}`, r.status >= 300 && r.status < 400 && r.location.includes('/login'), `${r.status} ${r.location}`);
     }
+    const exportAnon = await get('/api/leads/export', false);
+    check('Excel export needs a login', exportAnon.status >= 300 && exportAnon.status < 400 && exportAnon.location.includes('/login') && !exportAnon.text.includes('PK'), `${exportAnon.status}`);
     const login = await get('/login', false);
     check('login page renders', login.status === 200 && login.text.includes('Sign in'));
     const cron = await get('/api/cron/run', false);
@@ -72,6 +74,17 @@ run(async () => {
       const d = await get(`/leads/${firstLead}`, true);
       check('a lead page renders with the post, AI analysis and reply box', d.status === 200 && d.text.includes('AI analysis') && d.text.includes('Reply draft') && d.text.includes('Contact hints'), `${d.status}`);
     }
+    const xlsxRes = await fetch(`${base}/api/leads/export?hidden=1`, { redirect: 'manual', headers: { cookie } });
+    const xlsx = Buffer.from(await xlsxRes.arrayBuffer());
+    check(
+      'Excel export downloads an .xlsx file (a zip starting with PK)',
+      xlsxRes.status === 200 && (xlsxRes.headers.get('content-type') ?? '').includes('spreadsheetml.sheet') && /attachment; filename="[^"]+\.xlsx"/.test(xlsxRes.headers.get('content-disposition') ?? '') && xlsx.subarray(0, 2).toString() === 'PK' && xlsx.length > 2000,
+      `${xlsxRes.status}, ${xlsx.length} bytes`,
+    );
+    check('the Leads page has the Export to Excel button', leads.text.includes('/api/leads/export') && leads.text.includes('Export to Excel'));
+    const filteredLeads = await get('/leads?min=90&days=30', true);
+    const shownIds = new Set([...filteredLeads.text.matchAll(/href="\/leads\/([0-9a-f-]{36})"/g)].map((m) => m[1]));
+    check('a filtered Leads page says how many leads match and shows fewer than the full list', filteredLeads.status === 200 && /\d+ leads? match your filters/.test(filteredLeads.text) && shownIds.size < new Set([...leads.text.matchAll(/href="\/leads\/([0-9a-f-]{36})"/g)].map((m) => m[1])).size + 1, `${filteredLeads.status}`);
     const bad = await get('/leads/not-a-uuid', true);
     check('a bad lead id shows the not-found page, not an error page', (bad.status === 404 || /could not be found/i.test(bad.text)) && !/Something went wrong/.test(bad.text), `${bad.status}`);
     const keywords = await get('/keywords', true);

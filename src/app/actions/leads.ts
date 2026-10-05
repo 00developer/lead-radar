@@ -46,6 +46,7 @@ export async function saveLeadNotes(formData: FormData) {
   const { error } = await s.supabase.from('leads').update({ notes: notes.data || null }).eq('id', id.data).eq('workspace_id', s.workspaceId);
   if (error) back(`/leads/${id.data}`, `Could not save the notes: ${error.message}`);
   revalidatePath(`/leads/${id.data}`);
+  redirect(`/leads/${id.data}?saved=notes`);
 }
 
 export async function saveReplyDraft(formData: FormData) {
@@ -60,6 +61,7 @@ export async function saveReplyDraft(formData: FormData) {
     .eq('workspace_id', s.workspaceId);
   if (error) back(`/leads/${id.data}`, `Could not save the reply: ${error.message}`);
   revalidatePath(`/leads/${id.data}`);
+  redirect(`/leads/${id.data}?saved=reply`);
 }
 
 /** Turns a post the AI hid into a lead flagged for review, so a missed buyer is never lost. */

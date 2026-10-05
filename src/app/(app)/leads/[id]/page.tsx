@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { requireSession } from '../../../../lib/auth';
 import { getLead, nextUnlabeledLeadId, STATUSES } from '../../../../lib/dashboard/queries';
 import { extractContactHints, hasAnyHint } from '../../../../lib/contact-hints';
-import { Avatar, Badge, btn, btnPrimary, Card, ErrorBanner, IntentBadge, IntentRing, input } from '../../../../components/ui';
+import { Avatar, Badge, btn, btnPrimary, Card, ErrorBanner, IntentBadge, IntentRing, input, Notice } from '../../../../components/ui';
 import { saveLeadNotes, saveReplyDraft, setLeadStatus, setReviewLabel } from '../../../actions/leads';
 import { LocalTime } from '../../../../components/local-time';
 import { ReplyBox, Shortcuts } from './lead-tools';
@@ -15,15 +15,15 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex justify-between gap-4 border-t border-(--border) py-1.5 text-sm first:border-t-0">
-      <dt className="text-(--muted)">{label}</dt>
-      <dd className="text-right">{children}</dd>
+      <dt className="shrink-0 text-(--muted)">{label}</dt>
+      <dd className="min-w-0 wrap-break-word text-right">{children}</dd>
     </div>
   );
 }
 
-export default async function LeadPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string }> }) {
+export default async function LeadPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; saved?: string }> }) {
   const { id } = await params;
-  const { error } = await searchParams;
+  const { error, saved } = await searchParams;
   if (!UUID.test(id)) notFound();
   const s = await requireSession();
   const found = await getLead(s, id);
@@ -42,6 +42,8 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
         </Link>
       </p>
       {error && <ErrorBanner>{error}</ErrorBanner>}
+      {saved === 'notes' && <Notice>Notes saved.</Notice>}
+      {saved === 'reply' && <Notice>Reply draft saved.</Notice>}
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div className="grid min-w-0 content-start gap-4">
