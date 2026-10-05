@@ -43,6 +43,9 @@ export function createPgDb(connectionString: string, tls: PgTls | string = {}, m
     max,
     ...(ca ? { ssl: { ca } } : {}),
   });
+  // The database pooler closes idle connections. Without a listener that "error" event crashes the whole process
+  // (uncaughtException); with it, the pool drops the dead connection and opens a new one on the next query.
+  pool.on('error', (err) => console.warn(`Database pool: an idle connection was closed (${err.message}). A new one opens on the next query.`));
 
   return wrap(
     pool,
