@@ -3,6 +3,7 @@ import { getDb } from '../../../lib/app/server';
 import { diffScan, getProfile, listSuggestions, MAX_SCANS_PER_DAY, scansToday } from '../../../lib/profile/store';
 import { listServices } from '../../../lib/dashboard/queries';
 import { LocalTime } from '../../../components/local-time';
+import { SubmitButton } from '../../../components/submit-button';
 import { Badge, btn, btnDanger, btnPrimary, Card, ErrorBanner, input, Notice, PageHeader } from '../../../components/ui';
 import {
   acceptRescan, addOffering, analyzeText, confirmList, decideSuggestion, discardRescan, removeOffering, saveOffering, scanWebsite, startManually, suggestKeywordsAction,
@@ -19,9 +20,9 @@ function PasteCard() {
       <form action={analyzeText} className="grid gap-3">
         <textarea className={input} name="text" rows={7} minLength={200} maxLength={30000} placeholder="Paste at least a few paragraphs about what you sell…" aria-label="Text of your services page" required />
         <div>
-          <button className={btn} type="submit">
+          <SubmitButton className={btn} pendingLabel="Analysing…" note="The AI is reading your text. This takes about 10 to 30 seconds.">
             Analyse this text
-          </button>
+          </SubmitButton>
         </div>
       </form>
     </Card>
@@ -71,18 +72,18 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
               Website address
               <input className={input} name="url" placeholder="yourcompany.com" required />
             </label>
-            <button className={btnPrimary} type="submit">
+            <SubmitButton className={btnPrimary} pendingLabel="Scanning…" note="Reading your website and asking the AI. This can take up to a minute. Keep this tab open.">
               Scan website
-            </button>
+            </SubmitButton>
           </form>
           <p className="mt-2 text-xs text-(--muted)">Up to 12 public pages are read, respecting robots.txt. Private or internal addresses are refused. The scan can take up to a minute. {MAX_SCANS_PER_DAY} scans per day.</p>
         </Card>
         <PasteCard />
         <Card title="Or start with an empty list">
           <form action={startManually} className="flex flex-wrap items-end gap-3">
-            <button className={btn} type="submit">
+            <SubmitButton className={btn} pendingLabel="Starting…">
               Add products and services by hand
-            </button>
+            </SubmitButton>
           </form>
         </Card>
       </>
@@ -118,8 +119,8 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
             {diff.added.length + diff.changed.length + diff.removed.length === 0 && <li className="text-(--muted)">No differences.</li>}
           </ul>
           <div className="flex gap-2">
-            <form action={acceptRescan}><button className={btnPrimary} type="submit">Accept new items</button></form>
-            <form action={discardRescan}><button className={btn} type="submit">Discard</button></form>
+            <form action={acceptRescan}><SubmitButton className={btnPrimary} pendingLabel="Saving…">Accept new items</SubmitButton></form>
+            <form action={discardRescan}><SubmitButton className={btn} pendingLabel="Discarding…">Discard</SubmitButton></form>
           </div>
         </Card>
       )}
@@ -128,9 +129,9 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
         <Card title="What the business does (used by the AI)">
           <textarea className={input} name="summary" rows={3} maxLength={800} defaultValue={profile.business_summary ?? ''} aria-label="Business summary" />
           <div className="mt-3 flex flex-wrap items-center gap-3">
-            <button className={btnPrimary} type="submit">
+            <SubmitButton className={btnPrimary} pendingLabel="Saving…">
               {profile.status === 'confirmed' && unconfirmed === 0 ? 'Save summary' : `Confirm this list (${offerings.length} item${offerings.length === 1 ? '' : 's'})`}
-            </button>
+            </SubmitButton>
             <span className="text-xs text-(--muted)">
               {confirmedCount} confirmed, {unconfirmed} waiting. Only confirmed items are given to the AI. Reply drafts never mention anything outside this list.
             </span>
@@ -158,7 +159,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
                     {services.map((sv) => <option key={sv.id} value={sv.id}>{sv.name}</option>)}
                   </select>
                   <div className="flex flex-wrap items-center gap-2 md:col-span-4">
-                    <button className={btn} type="submit">Save</button>
+                    <SubmitButton className={btn} pendingLabel="Saving…">Save</SubmitButton>
                     <Badge tone={o.confirmed ? 'good' : 'warn'}>{o.confirmed ? 'confirmed' : 'needs confirming'}</Badge>
                     <Badge>{o.origin === 'manual' ? 'added by hand' : 'from website'}</Badge>
                     {o.source_url && <a className="text-xs underline" href={o.source_url} target="_blank" rel="noopener noreferrer">source page</a>}
@@ -166,7 +167,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
                 </form>
                 <form action={removeOffering} className="mt-1">
                   <input type="hidden" name="id" value={o.id} />
-                  <button className={btnDanger} type="submit" aria-label={`Remove ${o.name}`}>Remove</button>
+                  <SubmitButton className={btnDanger} pendingLabel="Removing…" aria-label={`Remove ${o.name}`}>Remove</SubmitButton>
                 </form>
               </li>
             ))}
@@ -176,7 +177,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
           <input className={`${input} md:col-span-2`} name="name" placeholder="Name, for example Mobile app development" aria-label="New item name" required />
           <input className={`${input} md:col-span-2`} name="description" placeholder="Short description" aria-label="New item description" />
           <select className={input} name="kind" aria-label="New item kind"><option value="service">service</option><option value="product">product</option></select>
-          <button className={btn} type="submit">Add item</button>
+          <SubmitButton className={btn} pendingLabel="Adding…">Add item</SubmitButton>
         </form>
       </Card>
 
@@ -186,7 +187,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
             Website address
             <input className={input} name="url" defaultValue={profile.website_url.startsWith('(') ? '' : profile.website_url} placeholder="yourcompany.com" required />
           </label>
-          <button className={btn} type="submit">Scan website</button>
+          <SubmitButton className={btn} pendingLabel="Scanning…" note="Reading your website and asking the AI. This can take up to a minute. Keep this tab open.">Scan website</SubmitButton>
         </form>
         <p className="mt-2 text-xs text-(--muted)">{scans} of {MAX_SCANS_PER_DAY} scans used in the last 24 hours. A re-scan never overwrites your confirmed list.</p>
       </Card>
@@ -198,7 +199,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
           <p className="text-sm text-(--muted)">Confirm your list first. Keywords are suggested from the confirmed products and services.</p>
         ) : (
           <>
-            <form action={suggestKeywordsAction} className="mb-3"><button className={btnPrimary} type="submit">Suggest keywords</button></form>
+            <form action={suggestKeywordsAction} className="mb-3"><SubmitButton className={btnPrimary} pendingLabel="Thinking…" note="The AI is writing keyword ideas. This takes about 10 to 30 seconds.">Suggest keywords</SubmitButton></form>
             {suggestions.length === 0 ? (
               <p className="text-sm text-(--muted)">No pending suggestions.</p>
             ) : (
@@ -210,8 +211,8 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
                     {k.is_negative && <Badge tone="warn">negative</Badge>}
                     {k.service_slug && <Badge>{k.service_slug}</Badge>}
                     <span className="ml-auto flex gap-2">
-                      <form action={decideSuggestion}><input type="hidden" name="id" value={k.id} /><input type="hidden" name="decision" value="approve" /><button className={btn} type="submit">Approve</button></form>
-                      <form action={decideSuggestion}><input type="hidden" name="id" value={k.id} /><input type="hidden" name="decision" value="reject" /><button className={btn} type="submit">Reject</button></form>
+                      <form action={decideSuggestion}><input type="hidden" name="id" value={k.id} /><input type="hidden" name="decision" value="approve" /><SubmitButton className={btn} pendingLabel="Approving…">Approve</SubmitButton></form>
+                      <form action={decideSuggestion}><input type="hidden" name="id" value={k.id} /><input type="hidden" name="decision" value="reject" /><SubmitButton className={btn} pendingLabel="Rejecting…">Reject</SubmitButton></form>
                     </span>
                   </li>
                 ))}

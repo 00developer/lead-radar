@@ -5,6 +5,7 @@ import { listWorkspaceOverview } from '../../../lib/phase4/workspaces';
 import { Badge, btn, btnDanger, btnPrimary, Card, EmptyState, ErrorBanner, input, Notice, PageHeader } from '../../../components/ui';
 import { LocalTime } from '../../../components/local-time';
 import { createInviteAction, revokeInviteAction, savePlanAction } from '../../actions/admin';
+import { SubmitButton } from '../../../components/submit-button';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,7 +47,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
               Valid for (days)
               <input className={`${input} w-24`} type="number" name="days" min={1} max={MAX_INVITE_DAYS} defaultValue={7} />
             </label>
-            <button className={btnPrimary} type="submit">Create link</button>
+            <SubmitButton className={btnPrimary} pendingLabel="Creating…">Create link</SubmitButton>
           </form>
         </Card>
 
@@ -78,7 +79,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                           {st === 'open' && (
                             <form action={revokeInviteAction}>
                               <input type="hidden" name="id" value={i.id} />
-                              <button className={btnDanger} type="submit">Revoke</button>
+                              <SubmitButton className={btnDanger} pendingLabel="Revoking…">Revoke</SubmitButton>
                             </form>
                           )}
                         </td>
@@ -126,7 +127,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                     Note
                     <input className={`${input} w-44`} type="text" name="note" maxLength={200} defaultValue={w.plan?.note ?? ''} />
                   </label>
-                  <button className={btn} type="submit">Save plan</button>
+                  <SubmitButton className={btn} pendingLabel="Saving…">Save plan</SubmitButton>
                 </div>
                 {!w.plan && <p className="mt-2 text-xs text-(--bad)">This workspace has no plan, so nothing can run until you save one.</p>}
               </form>

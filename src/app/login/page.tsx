@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { signInErrorKind } from '../../lib/supabase/sign-in-error';
 import { createSupabaseServerClient } from '../../lib/supabase/server';
 import { btnPrimary, ErrorBanner, input, Notice } from '../../components/ui';
+import { SubmitButton } from '../../components/submit-button';
 import { IconCheck, LogoMark } from '../../components/icons';
 
 async function signIn(formData: FormData) {
@@ -77,9 +78,9 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
               Password
               <input className={input} name="password" type="password" autoComplete="current-password" placeholder="••••••••••" required />
             </label>
-            <button className={`${btnPrimary} mt-1 w-full py-2.5`} type="submit">
+            <SubmitButton className={`${btnPrimary} mt-1 w-full py-2.5`} pendingLabel="Signing in…">
               Sign in
-            </button>
+            </SubmitButton>
           </form>
           <p className="mt-5 text-center text-xs text-(--muted)">Lead Radar is invite-only for now. Open the invite link you received to create your account.</p>
         </div>

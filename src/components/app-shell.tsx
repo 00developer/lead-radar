@@ -1,7 +1,8 @@
 'use client';
 
-import Link from 'next/link';
+import Link, { useLinkStatus } from 'next/link';
 import { usePathname } from 'next/navigation';
+import { SubmitButton } from './submit-button';
 import { useEffect, useState, type ReactNode } from 'react';
 import { IconChart, IconClose, IconKeywords, IconLeads, IconLogout, IconMenu, IconOverview, IconProfile, IconSettings, IconSources, IconTarget, LogoMark } from './icons';
 
@@ -19,6 +20,12 @@ const NAV: NavItem[] = [
 ];
 
 const ADMIN_NAV: NavItem = { href: '/admin', label: 'Admin', icon: IconProfile, group: 'Account' };
+
+/** Small spinner inside a sidebar link while its page is loading. Always takes the same space, so nothing jumps. */
+function NavPending() {
+  const { pending } = useLinkStatus();
+  return <span aria-hidden="true" className={`h-3.5 w-3.5 shrink-0 rounded-full border-2 border-current border-t-transparent ${pending ? 'animate-spin opacity-100' : 'opacity-0'}`} />;
+}
 
 function isActive(path: string, href: string) {
   return href === '/' ? path === '/' : path === href || path.startsWith(`${href}/`);
@@ -60,6 +67,7 @@ export function AppShell({
                     <Link href={n.href} className="nav-link" aria-current={active ? 'page' : undefined}>
                       <Icon width={19} height={19} />
                       <span className="flex-1">{n.label}</span>
+                      <NavPending />
                       {n.badge && newLeads > 0 && (
                         <span className="grad-bg rounded-full px-2 py-0.5 text-[0.68rem] font-semibold tabular-nums text-white">{newLeads > 99 ? '99+' : newLeads}</span>
                       )}
@@ -81,9 +89,12 @@ export function AppShell({
           </div>
         </div>
         <form action={signOut} className="mt-3">
-          <button type="submit" className="flex w-full items-center justify-center gap-2 rounded-lg border border-(--border) px-3 py-1.5 text-sm text-(--muted) transition hover:border-(--bad) hover:text-(--bad)">
+          <SubmitButton
+            pendingLabel="Signing out…"
+            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-(--border) px-3 py-1.5 text-sm text-(--muted) transition hover:border-(--bad) hover:text-(--bad) disabled:opacity-60"
+          >
             <IconLogout width={16} height={16} /> Sign out
-          </button>
+          </SubmitButton>
         </form>
       </div>
     </div>

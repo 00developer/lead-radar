@@ -4,6 +4,9 @@ import { listRuns, listSources } from '../../../lib/dashboard/queries';
 import { Badge, btn, btnDanger, btnPrimary, Card, EmptyState, ErrorBanner, input, Notice, PageHeader, RunStatus } from '../../../components/ui';
 import { LocalTime } from '../../../components/local-time';
 import { RunButton } from '../../../components/run-button';
+import { BusyLink } from '../../../components/action-links';
+import { PageStamp } from '../../../components/page-stamp';
+import { SubmitButton } from '../../../components/submit-button';
 import { saveSource } from '../../actions/workspace';
 import { disconnectThreads, runNow } from '../../actions/run';
 
@@ -44,6 +47,7 @@ export default async function SourcesPage({ searchParams }: { searchParams: Prom
   return (
     <>
       <PageHeader title="Sources & Runs" subtitle="Where posts come from, how much a run may cost, and what happened in recent runs." />
+      <PageStamp at={new Date().toISOString()} />
       {p.error && <ErrorBanner>{p.error}</ErrorBanner>}
       {p.saved && <Notice>Saved.</Notice>}
       {p.notice && <Notice>{p.notice}</Notice>}
@@ -70,14 +74,14 @@ export default async function SourcesPage({ searchParams }: { searchParams: Prom
         )}
         <p className="mt-2 text-xs text-(--muted)">The connected account is used only to search public posts. Nothing is ever posted, liked or followed from it.</p>
         <div className="mt-3 flex flex-wrap gap-2">
-          <Link className={connected ? btn : btnPrimary} href="/api/threads/connect" prefetch={false}>
+          <BusyLink className={connected ? btn : btnPrimary} href="/api/threads/connect" busyLabel="Opening Threads…">
             {conn && conn.status !== 'disconnected' ? 'Reconnect' : 'Connect Threads account'}
-          </Link>
+          </BusyLink>
           {conn && conn.status !== 'disconnected' && (
             <form action={disconnectThreads}>
-              <button className={btnDanger} type="submit">
+              <SubmitButton className={btnDanger} pendingLabel="Disconnecting…">
                 Disconnect (deletes the stored token)
-              </button>
+              </SubmitButton>
             </form>
           )}
         </div>
@@ -103,18 +107,23 @@ export default async function SourcesPage({ searchParams }: { searchParams: Prom
                 Max spend per run (USD)
                 <input className={`${input} w-32`} type="number" step="0.01" name="max_spend_usd" min={0} max={50} defaultValue={Number(src.max_spend_usd)} />
               </label>
-              <button className={btn} type="submit">
+              <SubmitButton className={btn} pendingLabel="Saving…">
                 Save limits
-              </button>
+              </SubmitButton>
             </form>
             <form action={runNow} className="mt-3 border-t border-(--border) pt-3">
               <input type="hidden" name="source" value={src.source} />
               {src.enabled ? (
                 <RunButton />
               ) : (
-                <button className={btnPrimary} type="submit" disabled>
-                  Run now
-                </button>
+                <>
+                  <button className={btnPrimary} type="submit" disabled>
+                    Run now
+                  </button>
+                  <span className="ml-3 block text-xs font-medium sm:inline">
+                    {allowed(src.source) ? 'Run now is off: tick "Enabled" above and press "Save limits" first.' : 'Run now is off for your workspace.'}
+                  </span>
+                </>
               )}
               <span className="ml-3 block text-xs text-(--muted) sm:inline">
                 Collects up to {src.max_results} posts (at most ${Number(src.max_spend_usd).toFixed(2)}), then classifies and sends alerts. It can take a few minutes; keep this tab open.

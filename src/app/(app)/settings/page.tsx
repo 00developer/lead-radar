@@ -3,6 +3,7 @@ import { getAiUsageThisMonth, getSettings, listServices } from '../../../lib/das
 import { btn, btnDanger, btnPrimary, Card, ErrorBanner, input, Notice, PageHeader } from '../../../components/ui';
 import { deleteMyAccount } from '../../actions/account';
 import { addService, saveService, saveSettings } from '../../actions/workspace';
+import { SubmitButton } from '../../../components/submit-button';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,9 +64,9 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             <p className="mt-1 text-xs text-(--muted)">Posts in other languages are kept but shown under "Hidden by AI".</p>
           </fieldset>
           <div className="md:col-span-2">
-            <button className={btnPrimary} type="submit">
+            <SubmitButton className={btnPrimary} pendingLabel="Saving…">
               Save settings
-            </button>
+            </SubmitButton>
           </div>
         </form>
       </Card>
@@ -84,9 +85,9 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
                   <label className="flex items-center gap-1 text-sm">
                     <input type="checkbox" name="enabled" defaultChecked={sv.enabled} /> on
                   </label>
-                  <button className={btn} type="submit">
+                  <SubmitButton className={btn} pendingLabel="Saving…">
                     Save
-                  </button>
+                  </SubmitButton>
                 </div>
               </form>
             </li>
@@ -96,9 +97,9 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
           <input className={input} name="slug" placeholder="slug_like_this" aria-label="New service slug" required />
           <input className={`${input} md:col-span-2`} name="name" placeholder="Service name" aria-label="New service name" required />
           <input className={`${input} md:col-span-2`} name="description" placeholder="Short description for the AI" aria-label="New service description" />
-          <button className={btn} type="submit">
+          <SubmitButton className={btn} pendingLabel="Adding…">
             Add service
-          </button>
+          </SubmitButton>
         </form>
       </Card>
 
@@ -116,9 +117,9 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
               Type DELETE to confirm
               <input className={`${input} w-48`} type="text" name="confirm" autoComplete="off" required />
             </label>
-            <button className={btnDanger} type="submit">
+            <SubmitButton className={btnDanger} pendingLabel="Deleting your account…" note="Please wait. You are signed out when it is done.">
               Delete my account
-            </button>
+            </SubmitButton>
           </form>
         </Card>
       </div>

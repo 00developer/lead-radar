@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { btn, btnPrimary, input } from '../../../../components/ui';
+import { SubmitButton } from '../../../../components/submit-button';
 
 /** Reply draft: editable, saved on request, with a copy button. The tool never sends anything. */
 export function ReplyBox({ leadId, initial, save }: { leadId: string; initial: string; save: (f: FormData) => Promise<void> }) {
@@ -42,9 +43,9 @@ export function ReplyBox({ leadId, initial, save }: { leadId: string; initial: s
         <button type="button" className={btnPrimary} onClick={copy}>
           Copy reply (C)
         </button>
-        <button type="submit" className={btn}>
+        <SubmitButton className={btn} pendingLabel="Saving…">
           Save edit
-        </button>
+        </SubmitButton>
         <span aria-live="polite" className="text-sm text-(--muted)">
           {copied === 'yes' && 'Copied.'}
           {copied === 'no' && 'Could not copy automatically. The text is selected, press Ctrl+C.'}

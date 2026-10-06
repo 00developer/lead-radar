@@ -1,8 +1,12 @@
 import Link from 'next/link';
+import Form from 'next/form';
 import { requireSession } from '../../../lib/auth';
 import { listHidden, listLeads, listServices, PAGE_SIZE, STATUSES } from '../../../lib/dashboard/queries';
 import { Avatar, Badge, btn, btnPrimary, EmptyState, ErrorBanner, IntentBadge, IntentRing, input, PageHeader } from '../../../components/ui';
 import { IconSparkle } from '../../../components/icons';
+import { DownloadButton } from '../../../components/action-links';
+import { PageStamp } from '../../../components/page-stamp';
+import { SubmitButton } from '../../../components/submit-button';
 import { promoteHiddenPost } from '../../actions/leads';
 
 export const dynamic = 'force-dynamic';
@@ -45,18 +49,18 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
         <Link className={hiddenView ? btnPrimary : btn} href="/leads?view=hidden">
           Hidden by AI
         </Link>
-        {/* A plain link: the browser downloads the file. Not a Next Link, so nothing is prefetched. */}
-        <a className={btn} href={hiddenView ? '/api/leads/export?hidden=1' : '/api/leads/export'} download>
+        <DownloadButton className={btn} href={hiddenView ? '/api/leads/export?hidden=1' : '/api/leads/export'} busyLabel="Preparing the Excel file…">
           {hiddenView ? 'Export to Excel (with hidden)' : 'Export to Excel'}
-        </a>
+        </DownloadButton>
       </PageHeader>
+      <PageStamp at={new Date().toISOString()} />
       {p.error && <ErrorBanner>{p.error}</ErrorBanner>}
 
       {hiddenView ? (
         <HiddenList s={s} page={page} qs={qs} />
       ) : (
         <>
-          <form method="get" className="card mb-5 grid grid-cols-2 gap-3 p-4 md:grid-cols-6" aria-label="Filter leads">
+          <Form action="/leads" className="card mb-5 grid grid-cols-2 gap-3 p-4 md:grid-cols-6" aria-label="Filter leads">
             <select name="service" defaultValue={p.service ?? ''} className={input} aria-label="Service">
               <option value="">All services</option>
               {services.map((sv) => (
@@ -102,14 +106,14 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
               <input type="checkbox" name="review" value="1" defaultChecked={p.review === '1'} /> Needs review
             </label>
             <div className="col-span-2 flex gap-2 md:col-span-6">
-              <button className={btnPrimary} type="submit">
+              <SubmitButton className={btnPrimary} pendingLabel="Applying…">
                 Apply filters
-              </button>
+              </SubmitButton>
               <Link className={btn} href="/leads">
                 Clear
               </Link>
             </div>
-          </form>
+          </Form>
           <LeadList s={s} p={p} page={page} qs={qs} />
         </>
       )}
@@ -198,9 +202,9 @@ async function HiddenList({ s, page, qs }: { s: Awaited<ReturnType<typeof requir
             <div className="mt-2 flex items-center gap-3">
               <form action={promoteHiddenPost}>
                 <input type="hidden" name="post_id" value={r.post_id} />
-                <button className={btn} type="submit">
+                <SubmitButton className={btn} pendingLabel="Making a lead…">
                   Make a lead
-                </button>
+                </SubmitButton>
               </form>
               <a className="text-xs underline" href={r.post_url} target="_blank" rel="noopener noreferrer">
                 Open original post

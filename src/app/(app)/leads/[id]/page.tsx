@@ -6,6 +6,7 @@ import { extractContactHints, hasAnyHint } from '../../../../lib/contact-hints';
 import { Avatar, Badge, btn, btnPrimary, Card, ErrorBanner, IntentBadge, IntentRing, input, Notice } from '../../../../components/ui';
 import { saveLeadNotes, saveReplyDraft, setLeadStatus, setReviewLabel } from '../../../actions/leads';
 import { LocalTime } from '../../../../components/local-time';
+import { SubmitButton } from '../../../../components/submit-button';
 import { ReplyBox, Shortcuts } from './lead-tools';
 
 export const dynamic = 'force-dynamic';
@@ -86,9 +87,9 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
               <input type="hidden" name="id" value={lead.id} />
               <textarea name="notes" defaultValue={lead.notes ?? ''} rows={4} maxLength={5000} className={input} aria-label="Notes" />
               <div>
-                <button className={btn} type="submit">
+                <SubmitButton className={btn} pendingLabel="Saving…">
                   Save notes
-                </button>
+                </SubmitButton>
               </div>
             </form>
           </Card>
@@ -130,9 +131,9 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
                 <form key={st} id={`status-${st}`} action={setLeadStatus}>
                   <input type="hidden" name="id" value={lead.id} />
                   <input type="hidden" name="status" value={st} />
-                  <button type="submit" className={lead.status === st ? btnPrimary : btn} aria-pressed={lead.status === st} title={`Shortcut: ${i + 1}`}>
+                  <SubmitButton className={lead.status === st ? btnPrimary : btn} aria-pressed={lead.status === st} title={`Shortcut: ${i + 1}`}>
                     {st}
-                  </button>
+                  </SubmitButton>
                 </form>
               ))}
             </div>
@@ -143,24 +144,22 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
               <form id="label-genuine" action={setReviewLabel}>
                 <input type="hidden" name="id" value={lead.id} />
                 <input type="hidden" name="label" value="genuine" />
-                <button type="submit" className={lead.review_label === 'genuine' ? btnPrimary : btn} aria-pressed={lead.review_label === 'genuine'}>
+                <SubmitButton className={lead.review_label === 'genuine' ? btnPrimary : btn} aria-pressed={lead.review_label === 'genuine'}>
                   Genuine lead (G)
-                </button>
+                </SubmitButton>
               </form>
               <form id="label-not" action={setReviewLabel}>
                 <input type="hidden" name="id" value={lead.id} />
                 <input type="hidden" name="label" value="not_genuine" />
-                <button type="submit" className={lead.review_label === 'not_genuine' ? btnPrimary : btn} aria-pressed={lead.review_label === 'not_genuine'}>
+                <SubmitButton className={lead.review_label === 'not_genuine' ? btnPrimary : btn} aria-pressed={lead.review_label === 'not_genuine'}>
                   Not a real lead (N)
-                </button>
+                </SubmitButton>
               </form>
               {lead.review_label && (
                 <form action={setReviewLabel}>
                   <input type="hidden" name="id" value={lead.id} />
                   <input type="hidden" name="label" value="clear" />
-                  <button type="submit" className={btn}>
-                    Clear
-                  </button>
+                  <SubmitButton className={btn}>Clear</SubmitButton>
                 </form>
               )}
             </div>

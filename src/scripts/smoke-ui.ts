@@ -85,6 +85,10 @@ run(async () => {
     const filteredLeads = await get('/leads?min=90&days=30', true);
     const shownIds = new Set([...filteredLeads.text.matchAll(/href="\/leads\/([0-9a-f-]{36})"/g)].map((m) => m[1]));
     check('a filtered Leads page says how many leads match and shows fewer than the full list', filteredLeads.status === 200 && /\d+ leads? match your filters/.test(filteredLeads.text) && shownIds.size < new Set([...leads.text.matchAll(/href="\/leads\/([0-9a-f-]{36})"/g)].map((m) => m[1])).size + 1, `${filteredLeads.status}`);
+    const sourcesPage = await get('/sources', true);
+    check('Leads and Sources show the "Updated" line with a Refresh button', [leads.text, sourcesPage.text].every((t) => t.includes('Updated') && t.includes('Refresh')));
+    const login2 = await get('/login', false);
+    check('the login button is the shared loading button (a normal submit button in the HTML)', /<button[^>]*type="submit"[^>]*>[^<]*(<[^>]+>)*Sign in/.test(login2.text));
     const bad = await get('/leads/not-a-uuid', true);
     check('a bad lead id shows the not-found page, not an error page', (bad.status === 404 || /could not be found/i.test(bad.text)) && !/Something went wrong/.test(bad.text), `${bad.status}`);
     const keywords = await get('/keywords', true);

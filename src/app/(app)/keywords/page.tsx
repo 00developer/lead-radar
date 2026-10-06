@@ -2,6 +2,7 @@ import { requireSession } from '../../../lib/auth';
 import { listKeywords, listServices } from '../../../lib/dashboard/queries';
 import { Badge, btn, btnDanger, btnPrimary, Card, EmptyState, ErrorBanner, input, PageHeader } from '../../../components/ui';
 import { addKeyword, deleteKeyword, toggleKeyword } from '../../actions/workspace';
+import { SubmitButton } from '../../../components/submit-button';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,15 +18,13 @@ function KeywordRow({ k }: { k: Kw }) {
         <form action={toggleKeyword}>
           <input type="hidden" name="id" value={k.id} />
           <input type="hidden" name="enabled" value={String(!k.enabled)} />
-          <button className={btn} type="submit">
-            {k.enabled ? 'Disable' : 'Enable'}
-          </button>
+          <SubmitButton className={btn}>{k.enabled ? 'Disable' : 'Enable'}</SubmitButton>
         </form>
         <form action={deleteKeyword}>
           <input type="hidden" name="id" value={k.id} />
-          <button className={btnDanger} type="submit" aria-label={`Delete keyword ${k.term}`}>
+          <SubmitButton className={btnDanger} pendingLabel="Deleting…" aria-label={`Delete keyword ${k.term}`}>
             Delete
-          </button>
+          </SubmitButton>
         </form>
       </span>
     </li>
@@ -69,9 +68,9 @@ export default async function KeywordsPage({ searchParams }: { searchParams: Pro
             <option value="true">Negative (drop posts with it)</option>
           </select>
           <div className="md:col-span-5">
-            <button className={btnPrimary} type="submit">
+            <SubmitButton className={btnPrimary} pendingLabel="Adding…">
               Add keyword
-            </button>
+            </SubmitButton>
           </div>
         </form>
       </Card>

@@ -3,6 +3,7 @@ import { getDb } from '../../lib/app/server';
 import { createSupabaseServerClient } from '../../lib/supabase/server';
 import { findOpenInvite } from '../../lib/phase4/invites';
 import { btnPrimary, ErrorBanner, input } from '../../components/ui';
+import { SubmitButton } from '../../components/submit-button';
 import { LogoMark } from '../../components/icons';
 import { signUp } from '../actions/signup';
 
@@ -85,9 +86,9 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
                   I agree to the <Link className="underline" href="/terms" target="_blank">Terms</Link> and the <Link className="underline" href="/privacy" target="_blank">Privacy Policy</Link>.
                 </span>
               </label>
-              <button className={`${btnPrimary} mt-1 w-full py-2.5`} type="submit">
+              <SubmitButton className={`${btnPrimary} mt-1 w-full py-2.5`} pendingLabel="Creating your account…">
                 Create account
-              </button>
+              </SubmitButton>
             </form>
           </>
         )}
