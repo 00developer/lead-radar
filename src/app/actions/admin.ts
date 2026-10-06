@@ -9,6 +9,8 @@ import { createResendChannel } from '../../lib/alerts/email';
 import { buildInviteEmail } from '../../lib/phase4/invite-email';
 import { createInvite, MAX_INVITE_DAYS, revokeInvite } from '../../lib/phase4/invites';
 import { savePlan } from '../../lib/phase4/workspaces';
+import { deleteWorkspaceAsAdmin } from '../../lib/phase4/account';
+import { createSupabaseAdmin } from '../../lib/supabase/admin';
 
 function back(kind: 'error' | 'notice', message: string): never {
   redirect(`/admin?${kind}=${encodeURIComponent(message.slice(0, 300))}`);
@@ -52,6 +54,26 @@ export async function revokeInviteAction(formData: FormData) {
   await revokeInvite(getDb(), id.data);
   revalidatePath('/admin');
   back('notice', 'Invite revoked.');
+}
+
+/**
+ * Deletes a customer workspace and the logins of its members. Only a platform admin can do it, the workspace name must be typed,
+ * and a workspace with a platform admin in it is refused. See deleteWorkspaceAsAdmin for the order of the steps.
+ */
+export async function deleteWorkspaceAction(formData: FormData) {
+  const s = await requirePlatformAdmin();
+  const id = z.string().uuid().safeParse(formData.get('id'));
+  if (!id.success) back('error', 'Unknown workspace.');
+  const admin = createSupabaseAdmin();
+  const result = await deleteWorkspaceAsAdmin(getDb(), id.data, String(formData.get('confirm') ?? ''), async (userId) => {
+    const r = await admin.auth.admin.deleteUser(userId);
+    return r.error ? { ok: false, error: r.error.message.slice(0, 120) } : { ok: true };
+  });
+  if (!result.ok) back('error', result.error);
+  // A short record for the server log: who deleted what. No personal data beyond ids and the workspace name.
+  console.warn(`[admin] workspace deleted: "${result.name}" (${id.data}) by ${s.userId}; members ${result.membersRemoved}, logins removed ${result.loginsRemoved}`);
+  revalidatePath('/admin');
+  back('notice', `Workspace "${result.name}" was deleted${result.loginsRemoved ? ` together with ${result.loginsRemoved} login(s)` : ''}.`);
 }
 
 /** Sets what one workspace may spend. This is the real limit: runs and AI calls never exceed it. */

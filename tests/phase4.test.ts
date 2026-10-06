@@ -236,7 +236,7 @@ describe('invite email', () => {
   });
 });
 
-import { canDeleteAccount, deleteWorkspaceIfEmpty, memberCount, typedWordMatches } from '../src/lib/phase4/account';
+import { canDeleteAccount, deleteWorkspaceAsAdmin, deleteWorkspaceIfEmpty, memberCount, typedWordMatches } from '../src/lib/phase4/account';
 
 describe('account deletion', () => {
   it('needs the exact word DELETE', () => {
@@ -285,5 +285,91 @@ describe('account deletion', () => {
     await db.query('delete from auth.users where id = $1', [a]);
     expect(await deleteWorkspaceIfEmpty(db, w)).toBe(false);
     expect(await memberCount(db, w)).toBe(1);
+  });
+});
+
+describe('the app owner deletes a customer workspace', () => {
+  const count = async (table: string, w: string) => Number((await db.query<{ n: string }>(`select count(*) n from ${table} where workspace_id = $1`, [w])).rows[0].n);
+  const removeLogin = async (id: string) => {
+    await db.query('delete from auth.users where id = $1', [id]);
+    return { ok: true as const };
+  };
+
+  it('deletes an empty workspace, but only when the exact name is typed', async () => {
+    const u = await newUser('adm-empty@example.com');
+    const w = await createCustomerWorkspace(db, { name: 'Orphan Co', userId: u });
+    await db.query('delete from auth.users where id = $1', [u]); // the "Agent" case: nobody is in it any more
+    expect(await memberCount(db, w)).toBe(0);
+    const wrong = await deleteWorkspaceAsAdmin(db, w, 'orphan co', removeLogin);
+    expect(wrong.ok).toBe(false);
+    expect(await count('workspace_settings', w)).toBe(1);
+    const done = await deleteWorkspaceAsAdmin(db, w, '  Orphan Co ', removeLogin);
+    expect(done).toMatchObject({ ok: true, membersRemoved: 0, loginsRemoved: 0 });
+    expect(await count('workspace_settings', w)).toBe(0);
+    expect((await deleteWorkspaceAsAdmin(db, w, 'Orphan Co', removeLogin)).ok).toBe(false); // already gone
+  });
+
+  it('deletes the workspace, its data and its members\' logins, and leaves other workspaces alone', async () => {
+    const a = await newUser('adm-a@example.com');
+    const b = await newUser('adm-b@example.com');
+    const keep = await newUser('adm-keep@example.com');
+    const w = await createCustomerWorkspace(db, { name: 'Customer Co', userId: a });
+    await db.query("insert into workspace_members (workspace_id, user_id, role) values ($1,$2,'member')", [w, b]);
+    const other = await createCustomerWorkspace(db, { name: 'Other Co', userId: keep });
+    for (const x of [w, other]) {
+      await db.query("insert into posts (workspace_id, source, external_id, url, text, author_handle) values ($1,'apify_threads','x','https://x/y','need a site','h')", [x]);
+      await db.query("insert into threads_connections (workspace_id, threads_user_id, username, access_token_encrypted) values ($1,'1','u','ENC')", [x]);
+    }
+    const r = await deleteWorkspaceAsAdmin(db, w, 'Customer Co', removeLogin);
+    expect(r).toMatchObject({ ok: true, membersRemoved: 2, loginsRemoved: 2 });
+    for (const t of ['posts', 'threads_connections', 'workspace_plans', 'workspace_members']) expect(await count(t, w), t).toBe(0);
+    expect((await db.query('select 1 from auth.users where id in ($1,$2)', [a, b])).rows).toHaveLength(0);
+    expect(await count('posts', other)).toBe(1);
+    expect(await count('threads_connections', other)).toBe(1);
+    expect((await db.query('select 1 from auth.users where id = $1', [keep])).rows).toHaveLength(1);
+  });
+
+  it('refuses a workspace that has a platform admin, and removes nothing', async () => {
+    const admin = await newUser('adm-owner@example.com');
+    const member = await newUser('adm-owner-member@example.com');
+    await db.query('insert into platform_admins (user_id) values ($1)', [admin]);
+    const w = await createCustomerWorkspace(db, { name: 'Owner Co', userId: admin });
+    await db.query("insert into workspace_members (workspace_id, user_id, role) values ($1,$2,'member')", [w, member]);
+    const r = await deleteWorkspaceAsAdmin(db, w, 'Owner Co', removeLogin);
+    expect(r.ok).toBe(false);
+    expect(await memberCount(db, w)).toBe(2);
+    expect((await db.query('select 1 from auth.users where id = $1', [member])).rows).toHaveLength(1);
+    expect((await listWorkspaceOverview(db)).find((x) => x.id === w)?.has_admin).toBe(true);
+  });
+
+  it('a member who belongs to another workspace keeps the login and only loses this membership', async () => {
+    const a = await newUser('adm-two-a@example.com');
+    const both = await newUser('adm-two-both@example.com');
+    const w1 = await createCustomerWorkspace(db, { name: 'First Co', userId: a });
+    const w2 = await createCustomerWorkspace(db, { name: 'Second Co', userId: both });
+    await db.query("insert into workspace_members (workspace_id, user_id, role) values ($1,$2,'member')", [w1, both]);
+    const r = await deleteWorkspaceAsAdmin(db, w1, 'First Co', removeLogin);
+    expect(r).toMatchObject({ ok: true, membersRemoved: 2, loginsRemoved: 1 });
+    expect((await db.query('select 1 from auth.users where id = $1', [both])).rows).toHaveLength(1);
+    expect(await memberCount(db, w2)).toBe(1);
+  });
+
+  it('stops without deleting the workspace when a login cannot be removed, and a retry finishes the job', async () => {
+    const a = await newUser('adm-fail-a@example.com');
+    const b = await newUser('adm-fail-b@example.com');
+    const w = await createCustomerWorkspace(db, { name: 'Flaky Co', userId: a });
+    await db.query("insert into workspace_members (workspace_id, user_id, role) values ($1,$2,'member')", [w, b]);
+    let calls = 0;
+    const flaky = async (id: string) => {
+      calls += 1;
+      if (calls === 2) return { ok: false as const, error: 'auth service down' };
+      return removeLogin(id);
+    };
+    const first = await deleteWorkspaceAsAdmin(db, w, 'Flaky Co', flaky);
+    expect(first.ok).toBe(false);
+    expect(await count('workspace_settings', w)).toBe(1);
+    const again = await deleteWorkspaceAsAdmin(db, w, 'Flaky Co', removeLogin);
+    expect(again.ok).toBe(true);
+    expect(await count('workspace_settings', w)).toBe(0);
   });
 });

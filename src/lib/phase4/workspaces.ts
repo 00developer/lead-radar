@@ -107,6 +107,8 @@ export type WorkspaceOverview = {
   ai_calls_this_month: number;
   plan: Plan | null;
   sources_enabled: number;
+  /** A platform admin is a member: the app never offers to delete this workspace. */
+  has_admin: boolean;
 };
 
 /** One row per workspace for the Admin page (server connection, all workspaces). */
@@ -119,6 +121,7 @@ export async function listWorkspaceOverview(db: Db): Promise<WorkspaceOverview[]
        (select coalesce(sum(cost_usd), 0)::text from collector_runs c where c.workspace_id = w.id and c.started_at >= date_trunc('month', now())) as cost_this_month,
        (select count(*)::int from ai_usage a where a.workspace_id = w.id and a.created_at >= date_trunc('month', now())) as ai_calls_this_month,
        (select count(*)::int from workspace_sources s where s.workspace_id = w.id and s.enabled) as sources_enabled,
+       exists (select 1 from workspace_members m join platform_admins a on a.user_id = m.user_id where m.workspace_id = w.id) as has_admin,
        p.workspace_id is not null as has_plan,
        p.allow_apify, p.allow_official_api, p.max_results_cap, p.max_spend_cap_usd, p.ai_monthly_cap, p.note
      from workspaces w left join workspace_plans p on p.workspace_id = w.id
@@ -126,7 +129,7 @@ export async function listWorkspaceOverview(db: Db): Promise<WorkspaceOverview[]
   );
   return r.rows.map((x) => ({
     id: x.id, name: x.name, created_at: x.created_at, members: x.members, leads: x.leads, runs_this_month: x.runs_this_month,
-    cost_this_month: x.cost_this_month, ai_calls_this_month: x.ai_calls_this_month, sources_enabled: x.sources_enabled,
+    cost_this_month: x.cost_this_month, ai_calls_this_month: x.ai_calls_this_month, sources_enabled: x.sources_enabled, has_admin: x.has_admin,
     plan: x.has_plan ? toPlan(x as PlanRow) : null,
   }));
 }

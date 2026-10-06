@@ -4,7 +4,7 @@ import { inviteStatus, listInvites, MAX_INVITE_DAYS } from '../../../lib/phase4/
 import { listWorkspaceOverview } from '../../../lib/phase4/workspaces';
 import { Badge, btn, btnDanger, btnPrimary, Card, EmptyState, ErrorBanner, input, Notice, PageHeader } from '../../../components/ui';
 import { LocalTime } from '../../../components/local-time';
-import { createInviteAction, revokeInviteAction, savePlanAction } from '../../actions/admin';
+import { createInviteAction, deleteWorkspaceAction, revokeInviteAction, savePlanAction } from '../../actions/admin';
 import { SubmitButton } from '../../../components/submit-button';
 
 export const dynamic = 'force-dynamic';
@@ -96,7 +96,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           <p className="mb-3 text-sm text-(--muted)">A new customer workspace starts with collection switched off. Turn a source on only when you are ready to pay for it. These limits are the real ceiling: the customer cannot raise them.</p>
           <div className="grid gap-4">
             {workspaces.map((w) => (
-              <form key={w.id} action={savePlanAction} className="rounded-xl border border-(--border) p-4">
+              <div key={w.id} className="rounded-xl border border-(--border) p-4">
+              <form action={savePlanAction}>
                 <input type="hidden" name="id" value={w.id} />
                 <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
                   <p className="font-medium">{w.name}</p>
@@ -131,6 +132,31 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                 </div>
                 {!w.plan && <p className="mt-2 text-xs text-(--bad)">This workspace has no plan, so nothing can run until you save one.</p>}
               </form>
+
+              {w.has_admin ? (
+                <p className="mt-3 border-t border-(--border) pt-3 text-xs text-(--muted)">A platform admin belongs to this workspace, so it cannot be deleted from here.</p>
+              ) : (
+                <details className="mt-3 border-t border-(--border) pt-3">
+                  <summary className="cursor-pointer text-sm font-medium text-(--bad)">Delete this workspace…</summary>
+                  <form action={deleteWorkspaceAction} className="mt-3 grid gap-3">
+                    <input type="hidden" name="id" value={w.id} />
+                    <p className="text-sm">
+                      This permanently deletes <strong>{w.name}</strong>: {w.leads} lead(s), all its posts, keywords, business profile, run history and the stored Threads token
+                      {w.members > 0 ? <>, and the login of {w.members} member(s) (a member who also belongs to another workspace keeps the login)</> : null}. It cannot be undone.
+                    </p>
+                    <label className="grid gap-1 text-sm">
+                      Type the workspace name to confirm: <span className="font-medium">{w.name}</span>
+                      <input className={`${input} w-72`} type="text" name="confirm" autoComplete="off" required />
+                    </label>
+                    <div>
+                      <SubmitButton className={btnDanger} pendingLabel="Deleting…" note="Please wait. This can take a few seconds.">
+                        Delete workspace{w.members > 0 ? ' and logins' : ''}
+                      </SubmitButton>
+                    </div>
+                  </form>
+                </details>
+              )}
+              </div>
             ))}
           </div>
         </Card>
