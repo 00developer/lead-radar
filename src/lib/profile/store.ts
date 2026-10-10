@@ -4,7 +4,7 @@
 import type { Db } from '../db/types';
 import type { Offering, Suggestion } from './extract';
 
-export type StoredOffering = { id: string; kind: 'product' | 'service'; name: string; description: string | null; source_url: string | null; origin: 'ai_extracted' | 'manual'; confirmed: boolean; service_id: string | null };
+export type StoredOffering = { id: string; kind: 'product' | 'service'; name: string; description: string | null; source_url: string | null; origin: 'ai_extracted' | 'manual'; confirmed: boolean; service_id: string | null; portfolio_url: string | null };
 export type StoredProfile = {
   website_url: string;
   business_summary: string | null;
@@ -30,18 +30,18 @@ export async function getProfile(db: Db, workspaceId: string): Promise<{ profile
   );
   if (!p.rows[0]) return null;
   const o = await db.query<StoredOffering>(
-    'select id, kind, name, description, source_url, origin, confirmed, service_id from business_offerings where workspace_id = $1 order by confirmed desc, created_at, name',
+    'select id, kind, name, description, source_url, origin, confirmed, service_id, portfolio_url from business_offerings where workspace_id = $1 order by confirmed desc, created_at, name',
     [workspaceId],
   );
   return { profile: p.rows[0], offerings: o.rows };
 }
 
 /** What the classifier gets: null unless the profile is confirmed and has at least one confirmed offering. */
-export async function loadConfirmedProfile(db: Db, workspaceId: string): Promise<{ summary: string | null; offerings: { id: string; name: string; kind: string; description: string | null }[] } | null> {
+export async function loadConfirmedProfile(db: Db, workspaceId: string): Promise<{ summary: string | null; offerings: { id: string; name: string; kind: string; description: string | null; portfolio_url: string | null }[] } | null> {
   const p = await db.query<{ business_summary: string | null }>("select business_summary from business_profiles where workspace_id = $1 and status = 'confirmed'", [workspaceId]);
   if (!p.rows[0]) return null;
-  const o = await db.query<{ id: string; name: string; kind: string; description: string | null }>(
-    'select id, name, kind, description from business_offerings where workspace_id = $1 and confirmed order by created_at, name',
+  const o = await db.query<{ id: string; name: string; kind: string; description: string | null; portfolio_url: string | null }>(
+    'select id, name, kind, description, portfolio_url from business_offerings where workspace_id = $1 and confirmed order by created_at, name',
     [workspaceId],
   );
   if (o.rows.length === 0) return null;
@@ -87,13 +87,13 @@ export async function ensureProfile(db: Db, workspaceId: string, url: string): P
   await db.query("insert into business_profiles (workspace_id, website_url, status) values ($1,$2,'draft') on conflict (workspace_id) do update set website_url = excluded.website_url", [workspaceId, url]);
 }
 
-export async function updateOffering(db: Db, workspaceId: string, id: string, v: { name: string; description: string; kind: 'product' | 'service'; serviceId: string | null }): Promise<void> {
+export async function updateOffering(db: Db, workspaceId: string, id: string, v: { name: string; description: string; kind: 'product' | 'service'; serviceId: string | null; portfolioUrl?: string | null }): Promise<void> {
   // An edited offering has to be confirmed again, so nothing changes silently for the classifier.
   await db.query(
-    `update business_offerings set name = $3, description = $4, kind = $5, confirmed = false,
+    `update business_offerings set name = $3, description = $4, kind = $5, portfolio_url = $7, confirmed = false,
             service_id = (select id from workspace_services where id = $6 and workspace_id = $1)
       where workspace_id = $1 and id = $2`,
-    [workspaceId, id, v.name, v.description || null, v.kind, v.serviceId],
+    [workspaceId, id, v.name, v.description || null, v.kind, v.serviceId, v.portfolioUrl || null],
   );
 }
 
@@ -101,8 +101,8 @@ export async function deleteOffering(db: Db, workspaceId: string, id: string): P
   await db.query('delete from business_offerings where workspace_id = $1 and id = $2', [workspaceId, id]);
 }
 
-export async function addManualOffering(db: Db, workspaceId: string, v: { name: string; description: string; kind: 'product' | 'service' }): Promise<void> {
-  await db.query("insert into business_offerings (workspace_id, kind, name, description, origin, confirmed) values ($1,$2,$3,$4,'manual',false)", [workspaceId, v.kind, v.name, v.description || null]);
+export async function addManualOffering(db: Db, workspaceId: string, v: { name: string; description: string; kind: 'product' | 'service'; portfolioUrl?: string | null }): Promise<void> {
+  await db.query("insert into business_offerings (workspace_id, kind, name, description, portfolio_url, origin, confirmed) values ($1,$2,$3,$4,$5,'manual',false)", [workspaceId, v.kind, v.name, v.description || null, v.portfolioUrl || null]);
 }
 
 /** The user reviewed the list: every offering that is still on the list is confirmed, and the summary is saved. */

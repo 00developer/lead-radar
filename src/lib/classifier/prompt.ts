@@ -13,7 +13,7 @@ export const MAX_POST_CHARS = 1500;
 
 export type PromptService = { slug: string; name: string; description: string | null };
 
-export type PromptProfile = { summary: string | null; offerings: { name: string; kind: string; description: string | null }[] };
+export type PromptProfile = { summary: string | null; offerings: { name: string; kind: string; description: string | null; portfolio_url?: string | null }[] };
 
 export type PromptPost = {
   authorHandle: string;
@@ -43,7 +43,7 @@ Give intent_score from 0 to 100: 80-100 explicit request to hire now, with scope
 Copy budget and timeline only if the post states them; otherwise null. Never invent details.
 Write one short reason (max 200 characters) in English.
 language is the language of the post: en, hi, hinglish, or other for any other language.
-If you produce a reply_draft: 2 to 3 short sentences, friendly, specific to the post, no hard sell, no promises about price or time, in the same language as the post (English or Hinglish), and it must not claim to have seen anything that is not in the post. Otherwise reply_draft is null.
+If you produce a reply_draft: 2 to 3 short sentences, friendly, specific to the post, no hard sell, no promises about price or time, in the same language as the post (English or Hinglish), and it must not claim to have seen anything that is not in the post. If the post asks for something that matches a BUSINESS OFFERING with a [Link: ...], you must include that link in the reply_draft. Otherwise reply_draft is null.
 Return ONLY valid JSON with exactly these keys: author_type, service, matched_offering, fit, intent_score, urgency, budget, timeline, language, reason, reply_draft, confidence.
 service and urgency are null unless author_type is buyer or unclear. urgency is low, medium or high. confidence is a number from 0 to 1.
 
@@ -65,7 +65,11 @@ export function buildSystemPrompt(services: PromptService[], profile?: PromptPro
   let out = `${RULES.replace('@@OFFERINGS_RULE@@', profile ? PROFILE_RULE : NO_PROFILE_RULE)}\n\nWORKSPACE SERVICES:\n${lines.join('\n')}\n`;
   if (profile) {
     if (profile.summary) out += `\nBUSINESS SUMMARY: ${oneLine(profile.summary)}\n`;
-    const offers = profile.offerings.map((o) => `- ${oneLine(o.name)} (${o.kind})${o.description ? ': ' + oneLine(o.description) : ''}`);
+    const offers = profile.offerings.map((o) => {
+      let line = `- ${oneLine(o.name)} (${o.kind})${o.description ? ': ' + oneLine(o.description) : ''}`;
+      if (o.portfolio_url) line += ` [Link: ${o.portfolio_url}]`;
+      return line;
+    });
     out += `\nBUSINESS OFFERINGS:\n${offers.join('\n')}\n`;
   }
   return out;

@@ -158,7 +158,8 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
                     <option value="">No service link</option>
                     {services.map((sv) => <option key={sv.id} value={sv.id}>{sv.name}</option>)}
                   </select>
-                  <div className="flex flex-wrap items-center gap-2 md:col-span-4">
+                  <input className={`${input} md:col-span-4`} name="portfolioUrl" defaultValue={o.portfolio_url ?? ''} placeholder="Portfolio/Project link (optional)" aria-label="Portfolio link" />
+                  <div className="flex flex-wrap items-center gap-2 md:col-span-6">
                     <SubmitButton className={btn} pendingLabel="Saving…">Save</SubmitButton>
                     <Badge tone={o.confirmed ? 'good' : 'warn'}>{o.confirmed ? 'confirmed' : 'needs confirming'}</Badge>
                     <Badge>{o.origin === 'manual' ? 'added by hand' : 'from website'}</Badge>
@@ -177,7 +178,8 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
           <input className={`${input} md:col-span-2`} name="name" placeholder="Name, for example Mobile app development" aria-label="New item name" required />
           <input className={`${input} md:col-span-2`} name="description" placeholder="Short description" aria-label="New item description" />
           <select className={input} name="kind" aria-label="New item kind"><option value="service">service</option><option value="product">product</option></select>
-          <SubmitButton className={btn} pendingLabel="Adding…">Add item</SubmitButton>
+          <input className={`${input} md:col-span-4`} name="portfolioUrl" placeholder="Portfolio/Project link (optional)" aria-label="Portfolio link" />
+          <SubmitButton className={`${btn} md:col-span-2`} pendingLabel="Adding…">Add item</SubmitButton>
         </form>
       </Card>
 
