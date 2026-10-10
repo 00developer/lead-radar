@@ -51,6 +51,13 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             Alert email address
             <input className={input} type="email" name="alert_email" defaultValue={settings.alert_email ?? ''} placeholder="you@example.com" />
           </label>
+          <label className="grid gap-1 text-sm md:col-span-2">
+            <span className="flex items-center gap-2">
+              <input type="checkbox" name="auto_run_enabled" defaultChecked={settings.auto_run_enabled} />
+              Enable automatic daily runs
+            </span>
+            <span className="text-xs text-(--muted)">If checked, the background cron will automatically search for new leads every day.</span>
+          </label>
           <fieldset className="md:col-span-2">
             <legend className="mb-1 text-sm">Languages that can become leads</legend>
             <div className="flex flex-wrap gap-4 text-sm">

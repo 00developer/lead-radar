@@ -73,6 +73,7 @@ export async function saveSettings(formData: FormData) {
       age: z.coerce.number().int().min(1).max(365),
       ceiling: z.coerce.number().int().min(0).max(1_000_000),
       email: z.string().trim().email().max(200).or(z.literal('')),
+      autoRun: z.boolean(),
     })
     .safeParse({
       lead: formData.get('lead_intent_threshold'),
@@ -80,6 +81,7 @@ export async function saveSettings(formData: FormData) {
       age: formData.get('max_post_age_days'),
       ceiling: formData.get('ai_monthly_ceiling'),
       email: formData.get('alert_email') ?? '',
+      autoRun: formData.get('auto_run_enabled') === 'on',
     });
   if (!parsed.success) back('/settings', 'Check the numbers: thresholds 0 to 100, age 1 to 365 days, and a valid email.');
   const { data: plan } = await s.supabase.from('workspace_plans').select('ai_monthly_cap').eq('workspace_id', s.workspaceId).maybeSingle();
@@ -97,6 +99,7 @@ export async function saveSettings(formData: FormData) {
       ai_monthly_ceiling: Math.min(parsed.data.ceiling, globalCeiling, planCeiling),
       alert_email: parsed.data.email || null,
       allowed_languages: languages,
+      auto_run_enabled: parsed.data.autoRun,
       updated_at: new Date().toISOString(),
     })
     .eq('workspace_id', s.workspaceId);

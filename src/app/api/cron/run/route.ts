@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 
   const db = getDb();
   const deps = realDeps();
-  const workspaces = await db.query<{ id: string }>('select id from workspaces order by created_at');
+  const workspaces = await db.query<{ id: string }>('select w.id from workspaces w join workspace_settings ws on w.id = ws.workspace_id where ws.auto_run_enabled = true order by w.created_at');
   const results: { workspace: string; source: string; ok: boolean; note: string }[] = [];
 
   for (const w of workspaces.rows) {
