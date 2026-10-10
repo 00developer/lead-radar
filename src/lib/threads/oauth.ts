@@ -13,7 +13,7 @@
 import type { Db } from '../db/types';
 import { decryptSecret, encryptSecret } from '../crypto';
 
-export const SCOPES = ['threads_basic', 'threads_keyword_search'];
+export const SCOPES = ['threads_basic', 'threads_keyword_search', 'threads_content_publish'];
 const AUTHORIZE_URL = 'https://threads.com/oauth/authorize';
 const SHORT_TOKEN_URL = 'https://graph.threads.com/oauth/access_token';
 const LONG_TOKEN_URL = 'https://graph.threads.net/access_token';

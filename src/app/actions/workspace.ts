@@ -82,6 +82,7 @@ export async function saveSettings(formData: FormData) {
       ceiling: formData.get('ai_monthly_ceiling'),
       email: formData.get('alert_email') ?? '',
       autoRun: formData.get('auto_run_enabled') === 'on',
+      autoReply: formData.get('auto_reply_enabled') === 'on',
     });
   if (!parsed.success) back('/settings', 'Check the numbers: thresholds 0 to 100, age 1 to 365 days, and a valid email.');
   const { data: plan } = await s.supabase.from('workspace_plans').select('ai_monthly_cap').eq('workspace_id', s.workspaceId).maybeSingle();
@@ -100,6 +101,7 @@ export async function saveSettings(formData: FormData) {
       alert_email: parsed.data.email || null,
       allowed_languages: languages,
       auto_run_enabled: parsed.data.autoRun,
+      auto_reply_enabled: parsed.data.autoReply,
       updated_at: new Date().toISOString(),
     })
     .eq('workspace_id', s.workspaceId);

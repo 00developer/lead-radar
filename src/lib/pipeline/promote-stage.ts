@@ -49,18 +49,32 @@ export async function runPromote(db: Db, ws: WorkspaceContext): Promise<PromoteS
       summary.hidden += 1;
       continue;
     }
-    const up = await db.query<{ inserted: boolean }>(
+    const up = await db.query<{ inserted: boolean; id: string }>(
       `insert into leads (workspace_id, post_id, classification_id, needs_review) values ($1,$2,$3,$4)
        on conflict (workspace_id, post_id) do update
           set classification_id = excluded.classification_id, needs_review = excluded.needs_review, updated_at = now()
         where leads.status = 'new' and leads.review_label is null
           and (leads.classification_id, leads.needs_review) is distinct from (excluded.classification_id, excluded.needs_review)
-       returning (xmax = 0) as inserted`,
+       returning id, (xmax = 0) as inserted`,
       [ws.id, c.post_id, c.id, d.needsReview],
     );
     if (up.rows[0]) {
-      if (up.rows[0].inserted) summary.leadsCreated += 1;
-      else summary.leadsUpdated += 1;
+      if (up.rows[0].inserted) {
+        summary.leadsCreated += 1;
+        if (ws.settings.autoReplyEnabled && !d.needsReview) {
+          // If auto-reply is enabled and the lead doesn't need manual review, queue the draft.
+          await db.query(
+            `insert into outbound_messages (workspace_id, lead_id, post_id, message_text, scheduled_for)
+             select $1, $2, $3, reply_draft, now() + interval '10 minutes'
+               from classifications where id = $4 and reply_draft is not null
+             on conflict (lead_id) do nothing`,
+            [ws.id, up.rows[0].id, c.post_id, c.id]
+          );
+        }
+      }
+      else {
+        summary.leadsUpdated += 1;
+      }
     }
   }
   return summary;

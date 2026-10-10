@@ -58,6 +58,13 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             </span>
             <span className="text-xs text-(--muted)">If checked, the background cron will automatically search for new leads every day.</span>
           </label>
+          <label className="grid gap-1 text-sm md:col-span-2">
+            <span className="flex items-center gap-2">
+              <input type="checkbox" name="auto_reply_enabled" defaultChecked={(settings as any).auto_reply_enabled} />
+              Enable automatic public replies
+            </span>
+            <span className="text-xs text-(--muted)">If checked, the AI draft will be automatically sent as a public reply with a 10-15 minute delay (requires official API setup).</span>
+          </label>
           <fieldset className="md:col-span-2">
             <legend className="mb-1 text-sm">Languages that can become leads</legend>
             <div className="flex flex-wrap gap-4 text-sm">

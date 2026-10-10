@@ -13,6 +13,7 @@ export type WorkspaceContext = {
     allowedLanguages: string[];
     aiMonthlyCeiling: number;
     alertEmail: string | null;
+    autoReplyEnabled: boolean;
   };
   /** Enabled services, read from workspace_services (never hard-coded). */
   services: PromptService[];
@@ -33,6 +34,7 @@ type SettingsRow = {
   allowed_languages: string[];
   ai_monthly_ceiling: number;
   alert_email: string | null;
+  auto_reply_enabled: boolean;
 };
 
 export async function resolveWorkspaceId(db: Db, requested?: string): Promise<string> {
@@ -53,7 +55,7 @@ export async function loadWorkspace(db: Db, workspaceId: string): Promise<Worksp
   const ws = await db.query<{ id: string; name: string }>('select id, name from workspaces where id = $1', [workspaceId]);
   if (!ws.rows[0]) throw new Error(`Workspace ${workspaceId} not found.`);
   const st = await db.query<SettingsRow>(
-    'select lead_intent_threshold, alert_intent_threshold, max_post_age_days, allowed_languages, ai_monthly_ceiling, alert_email from workspace_settings where workspace_id = $1',
+    'select lead_intent_threshold, alert_intent_threshold, max_post_age_days, allowed_languages, ai_monthly_ceiling, alert_email, auto_reply_enabled from workspace_settings where workspace_id = $1',
     [workspaceId],
   );
   const s = st.rows[0];
@@ -79,6 +81,7 @@ export async function loadWorkspace(db: Db, workspaceId: string): Promise<Worksp
       // Never more than the owner-controlled plan allows (a workspace without a plan gets no AI calls).
       aiMonthlyCeiling: effectiveAiCeiling(s.ai_monthly_ceiling, plan),
       alertEmail: s.alert_email,
+      autoReplyEnabled: s.auto_reply_enabled,
     },
     services: services.rows,
     keywords: kws.rows.filter((k) => !k.is_negative).map((k) => ({ term: k.term, language: k.language })),
