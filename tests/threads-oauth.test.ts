@@ -78,7 +78,7 @@ describe('authorize url and code', () => {
   it('asks for exactly the two scopes with a state value', () => {
     const u = new URL(buildAuthorizeUrl({ appId: 'APP-ID', redirectUri: 'https://a.example/cb' }, 'STATE1'));
     expect(u.origin + u.pathname).toBe('https://threads.com/oauth/authorize');
-    expect(Object.fromEntries(u.searchParams)).toEqual({ client_id: 'APP-ID', redirect_uri: 'https://a.example/cb', scope: 'threads_basic,threads_keyword_search', response_type: 'code', state: 'STATE1' });
+    expect(Object.fromEntries(u.searchParams)).toEqual({ client_id: 'APP-ID', redirect_uri: 'https://a.example/cb', scope: 'threads_basic,threads_keyword_search,threads_content_publish', response_type: 'code', state: 'STATE1' });
   });
   it('removes the "#_" suffix Threads adds to the code', () => {
     expect(cleanCode('AQABC123#_')).toBe('AQABC123');
@@ -102,7 +102,7 @@ describe('connecting an account', () => {
     const row = (await db.query<{ access_token_encrypted: string; status: string; scopes: string[] }>('select access_token_encrypted, status, scopes from threads_connections where workspace_id = $1', [ws])).rows[0];
     expect(row.access_token_encrypted).not.toContain('LONG-TOKEN');
     expect(decryptSecret(row.access_token_encrypted, KEY)).toBe('LONG-TOKEN');
-    expect(row).toMatchObject({ status: 'active', scopes: ['threads_basic', 'threads_keyword_search'] });
+    expect(row).toMatchObject({ status: 'active', scopes: ['threads_basic', 'threads_keyword_search', 'threads_content_publish'] });
 
     const info = await getConnection(db, ws);
     expect(info).toMatchObject({ username: 'company_account', status: 'active', hasToken: true });
