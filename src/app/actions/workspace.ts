@@ -74,6 +74,7 @@ export async function saveSettings(formData: FormData) {
       ceiling: z.coerce.number().int().min(0).max(1_000_000),
       email: z.string().trim().email().max(200).or(z.literal('')),
       autoRun: z.boolean(),
+      autoReply: z.boolean(),
     })
     .safeParse({
       lead: formData.get('lead_intent_threshold'),
