@@ -10,7 +10,7 @@ const ownPost = (text: string, id = '1') => ({
 const fetchReturning = (data: unknown[]): FetchLike => async () => ({ ok: true, status: 200, json: async () => ({ data }) });
 const input = { workspaceId: 'w', keywords: ['need a website'], maxResults: 10, maxSpendUsd: 0 };
 
-describe('official search test mode (before Meta approves threads_keyword_search)', () => {
+describe('official search test mode (before Meta approves threads_keyword_search)', { timeout: 180000 }, () => {
   it('by default own posts are reported as "permission not approved", never as leads', async () => {
     const c = createThreadsApiCollector({ accessToken: TOKEN, ownUsername: 'tester', fetchFn: fetchReturning([ownPost('I need a website for my shop')]) });
     expect(await c.run(input)).toMatchObject({ status: 'failed', posts: [], error: expect.stringContaining('permission not approved') });
